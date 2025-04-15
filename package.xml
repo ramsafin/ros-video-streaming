@@ -10,14 +10,14 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <build>roscpp</build>
-    <build>cv_bridge</build>
-    <build>sensor_msgs</build>
-    <build>image_transport</build>
-    <build>camera_info_manager</build>
+    <depend>roscpp</depend>
+    <depend>cv_bridge</depend>
+    <depend>sensor_msgs</depend>
+    <depend>image_transport</depend>
+    <depend>camera_info_manager</depend>
 
     <!-- system -->
-    <build>v4l-utils</build>
+    <depend>v4l-utils</depend>
 
     <!-- The export tag contains other, unspecified, tags -->
     <export>

@@ -32,5 +32,5 @@ add_library(catkin_deps INTERFACE)
 target_link_libraries(catkin_deps INTERFACE ${catkin_LIBRARIES})
 target_include_directories(catkin_deps INTERFACE include ${catkin_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} STATIC src/vide_capture.cpp)
+add_library(${PROJECT_NAME} STATIC src/video_capture.cpp)
 target_link_libraries(${PROJECT_NAME} PUBLIC catkin_deps)
