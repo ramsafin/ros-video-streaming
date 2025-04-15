@@ -200,6 +200,17 @@ std::optional<v4l2_format> set_format(
   return fmt;
 }
 
+std::optional<v4l2_format> set_format(int handle, v4l2_format format, bool try_format = false) {
+  const uint64_t req = try_format ? VIDIOC_TRY_FMT : VIDIOC_S_FMT;
+
+  if (xioctl(handle, req, &format) == ERROR_CODE) {
+    std::cerr << "ERROR: VIDIOC_[S/TRY]_FMT failed - " << strerror(errno) << '\n';
+    return std::nullopt;
+  }
+
+  return format;
+}
+
 // Get current video format
 std::optional<v4l2_format> get_format(int handle) {
   v4l2_format fmt = {};

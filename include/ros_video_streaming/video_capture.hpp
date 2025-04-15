@@ -28,8 +28,7 @@ public:
 
     // fix the pipeline
     // 1. query / get formats, controls, streaming parameters, etc.
-    // 2.. 
-
+    // 2..
   }
 
   virtual ~VideoCapture() {
