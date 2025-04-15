@@ -99,9 +99,3 @@ In this case frames are converted into **grayscale** format, as it is computatio
 [R. Safin, and R. Lavrenov "Implementation of ROS Package for Simultaneous Video Streaming from Several Different Cameras"](https://www.researchgate.net/publication/325903109_Implementation_of_ROS_package_for_simultaneous_video_streaming_from_several_different_cameras?origin=mail&uploadChannel=re390&reqAcc=Jenny_Midwinter&useStoredCopy=0)
 
 _The 2018 International Conference on Artificial Life and Robotics (ICAROB 2018)At: B-Con Plaza, Beppu, Oita, Japan._
-
-## Contribution
-
-**lirs_ros_video_streaming** is an open-source project and will always stay open-source. Contributors are welcome!
-
-This project was created by [Ramil Safin](https://github.com/chupakabra1996/), who can be reached via email address (ramilsafnab1996@gmail.com).
