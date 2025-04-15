@@ -20,23 +20,23 @@ Install v4l-utils apt package:
 sudo apt-get install v4l-utils
 ```
 ### ROS Kinetic
-[Manually](http://wiki.ros.org/kinetic/Installation/Ubuntu) or using [ansible playbook](https://github.com/chupakabra1996/ansible-ros-kinetic-playbook).
+[Manually](http://wiki.ros.org/kinetic/Installation/Ubuntu) or using [ansible playbook](https://github.com/ramsafin/ansible-ros-kinetic-playbook).
 
 ## Getting Started
 
 To download the latest available release, clone the repository into your _catkin workspace_ (e.g. `~/catkin_ws`):
 ```shell
-cd ~/catkin_ws/src && git clone https://github.com/chupakabra1996/lirs_ros_video_streaming.git
+cd ~/catkin_ws/src && git clone https://github.com/ramsafin/ros-video-streaming.git
 ```
 
 Build ROS package:
 ```shell
-cd ~/catkin_ws && catkin_make --pkg lirs_ros_video_streaming
+cd ~/catkin_ws && catkin_make --pkg ros_video_streaming
 ```
 
 Run tests (`Note!` Change parameters in [launch file](launch/camera.launch)):
 ```shell
-rostest lirs_ros_video_streaming cameraHz.test
+rostest ros_video_streaming cameraHz.test
 ```
 
 ## Example (launch file)
@@ -47,7 +47,7 @@ The following ROS launch file will start ROS _master node_ along with _video_str
 <launch>
   
   <!-- start video streaming node -->
-  <include file="$(find lirs_ros_video_streaming)/launch/camera.launch">
+  <include file="$(find ros_video_streaming)/launch/camera.launch">
     
     <!-- ROS node name -->
     <arg name="camera_name" value="camera"/>
@@ -68,7 +68,7 @@ The following ROS launch file will start ROS _master node_ along with _video_str
     <arg name="image_format" value="yuv422"/>
 
     <!-- camera info -->
-    <arg name="camera_info_url" value="file:///$(find lirs_ros_video_streaming)/calibration/camera.yaml"/>
+    <arg name="camera_info_url" value="file:///$(find ros_video_streaming)/calibration/camera.yaml"/>
 
     <!-- whether to start image_view node (visualization) -->
     <arg name="image_view_enabled" value="false"/>
