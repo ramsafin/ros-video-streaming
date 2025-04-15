@@ -1,4 +1,4 @@
-# LIRS ROS video streaming
+# ROS video streaming
 
 Video streaming ROS package based on [Video4Linux API (ver. 2)](https://linuxtv.org/downloads/v4l-dvb-apis/uapi/v4l/v4l2.html) which is originally developed for the [Servosila Engineer](https://www.servosila.com/en/index.shtml) mobile robot.
 
