@@ -1,11 +1,16 @@
 #include "ros_video_streaming/tools.hpp"
 
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Initializers/ConsoleInitializer.h>
+#include <plog/Log.h>
+
 #include <sys/mman.h>
 
 #include <tuple>
 #include <vector>
 
-void logged_close(int fd) {
+void logged_close(int fd)
+{
   if (fd <= -1) return;
 
   if (!close(fd)) {
@@ -16,22 +21,34 @@ void logged_close(int fd) {
   std::cout << "INFO: closed fd: " << fd << '\n';
 }
 
-std::tuple<char, char, char, char> fourcc(uint32_t pixel_format) {
-  return std::make_tuple(
-    (pixel_format >> 0) & 0xFF, (pixel_format >> 8) & 0xFF, (pixel_format >> 16) & 0xFF,
-    (pixel_format >> 24) & 0xFF);
+std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false)
+{
+  const uint32_t mask = 0xFF;
+
+  if (is_big_endian) {
+    return {(pixel_format >> 24) & mask, (pixel_format >> 16) & mask, (pixel_format >> 8) & mask, (pixel_format)&mask};
+  }
+
+  return {pixel_format & mask, (pixel_format >> 8) & mask, (pixel_format >> 16) & mask, (pixel_format >> 24) & mask};
 }
 
-void frame_callback(uint8_t* data, int length) {
+void frame_callback(uint8_t* data, int length)
+{
   std::cout << "INFO: captured frame [" << length << "] bytes\n";
 }
 
-struct FrameBuffer {
+struct FrameBuffer
+{
   void* data;
   size_t length;
 };
 
-int main(int argc, char const* argv[]) {
+int main(int argc, char const* argv[])
+{
+  plog::init<plog::TxtFormatter>(plog::debug, plog::streamStdOut);
+
+  PLOG_ERROR << "failed";
+
   // read/write non-blocking access
   int fd = open("/dev/video0", O_RDWR | O_NONBLOCK);
 
@@ -81,12 +98,9 @@ int main(int argc, char const* argv[]) {
   }
 
   if (lirs::tools::xioctl(fd, VIDIOC_G_FMT, &fmt) != -1) {
-    char a, b, c, d;
-    std::tie(a, b, c, d) = fourcc(fmt.fmt.pix.pixelformat);
+    auto [a, b, c, d] = fourcc(fmt.fmt.pix.pixelformat);
 
-    printf(
-      "INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b,
-      c, d);
+    printf("INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b, c, d);
   }
 
   // set frame rate
@@ -106,9 +120,9 @@ int main(int argc, char const* argv[]) {
 
   // request buffer (MMAP)
   v4l2_requestbuffers buf_req = {};
-  buf_req.count = 4;  // Number of buffers (recommended: 4-8)
+  buf_req.count = 4;  // number of buffers (recommended: 4-8)
   buf_req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  buf_req.memory = V4L2_MEMORY_MMAP;  // Zero-copy mapping
+  buf_req.memory = V4L2_MEMORY_MMAP;
 
   if (lirs::tools::xioctl(fd, VIDIOC_REQBUFS, &buf_req) == -1) {
     perror("ERROR: failed to request buffers");
@@ -181,9 +195,9 @@ int main(int argc, char const* argv[]) {
     FD_ZERO(&fds);
     FD_SET(fd, &fds);
 
-    // wait for new frame (timeout: 2 seconds)
-    struct timeval tv = {2, 0};
-    int ret = select(fd + 1, &fds, NULL, NULL, &tv);
+    // wait for new frame (timeout: 1 seconds)
+    struct timeval tv = {1, 0};
+    int ret = select(fd + 1, &fds, nullptr, nullptr, &tv);
 
     if (ret == -1) {
       perror("WARN: select() failed");
@@ -193,7 +207,7 @@ int main(int argc, char const* argv[]) {
       continue;
     }
 
-    // Dequeue a filled buffer
+    // dequeue a filled buffer
     v4l2_buffer buf = {};
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
@@ -206,7 +220,7 @@ int main(int argc, char const* argv[]) {
     // process frames
     frame_callback(reinterpret_cast<uint8_t*>(buffers[buf.index].data), buf.bytesused);
 
-    // Requeue the buffer
+    // requeue the buffer
     if (lirs::tools::xioctl(fd, VIDIOC_QBUF, &buf) == -1) {
       perror("ERROR: failed to requeue buffer");
       break;
@@ -214,7 +228,8 @@ int main(int argc, char const* argv[]) {
   }
 
   // stop streaming
-  v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
   if (lirs::tools::xioctl(fd, VIDIOC_STREAMOFF, &type) == -1) {
     std::cerr << "WARN: failed to stop streaming\n";
   }

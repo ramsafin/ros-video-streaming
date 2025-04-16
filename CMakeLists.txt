@@ -5,6 +5,8 @@ project(ros_video_streaming VERSION 2.0.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_subdirectory(external)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   cv_bridge
@@ -53,4 +55,7 @@ target_link_libraries(v4l2_deps INTERFACE ${V4L2_LIBRARIES})
 target_include_directories(v4l2_deps INTERFACE include ${V4L2_INCLUDE_DIRS})
 
 add_library(${PROJECT_NAME} STATIC src/capture.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC v4l2_deps)
+target_link_libraries(${PROJECT_NAME} PUBLIC v4l2_deps plog::plog)
+
+add_executable(playground playground.cpp)
+target_link_libraries(playground PRIVATE v4l2_deps plog::plog)

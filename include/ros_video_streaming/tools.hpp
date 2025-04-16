@@ -51,7 +51,7 @@ bool is_readable(int handle, timeval timeout = DEFAULT_SELECT_TIME)
 
 // Safe ioctl wrapper with EINTR handling
 template <typename T>
-int xioctl(int handle, unsigned long request, T arg)
+int xioctl(int handle, size_t request, T arg)
 {
   int status{0};
 
