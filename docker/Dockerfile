@@ -1,0 +1,59 @@
+# Use the NVIDIA OpenGL base image with GLVND and development tools for Ubuntu 20.04
+FROM nvidia/opengl:1.2-glvnd-runtime-ubuntu20.04
+
+# Build arguments to customize the image build process
+ARG ROS_USER=ros
+ARG ROS_USER_HOME_DIR=/home/${ROS_USER}
+
+# Allow installation of additional ROS packages during the build
+# Usage example: docker build --build-arg EXTRA_ROS_PKGS="ros-noetic-moveit ros-noetic-navigation" -t <ros_image> .
+ARG EXTRA_ROS_PKGS=""
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set locale to avoid localization issues
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Disable MIT-SHM for Qt applications to prevent shared memory issues (specific to X11-based applications)
+ENV QT_X11_NO_MITSHM=1
+
+# NVIDIA runtime for GPU acceleration
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+
+# Install core system dependencies required for ROS and other tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  git nano curl wget sudo gnupg2 mesa-utils lsb-release build-essential \
+  && rm -rf /var/lib/apt/lists/*
+
+# Add the ROS package repository and install ROS Noetic with additional dependencies
+RUN echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list \
+  && curl -sSL 'http://packages.ros.org/ros.key' | apt-key add - \
+  && apt-get update && apt-get install -y --no-install-recommends \
+  python3-pip python3-rosdep python3-catkin-tools python3-rosinstall \
+  ros-noetic-desktop-full \
+  ${EXTRA_ROS_PKGS} \
+  && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user (ROS_USER) and grant sudo permissions for ROS operations
+RUN useradd -m -s /bin/bash -d ${ROS_USER_HOME_DIR} ${ROS_USER} \
+  && usermod -aG sudo ${ROS_USER} \
+  && echo "${ROS_USER} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${ROS_USER}
+
+# Copy the entrypoint script and ensure it has read and execute permissions
+COPY --chmod=755 ./entrypoint.sh ${ROS_USER_HOME_DIR}/entrypoint.sh
+
+# Switch to the ROS user to run the container as a non-root user
+USER ${ROS_USER}
+
+# Initialize rosdep (necessary to resolve ROS package dependencies) and update it
+# Note: rosdep update requires network access and may fail if no internet connection is available
+RUN rosdep init && \
+  rosdep update || echo "rosdep update failed. Please run manually inside the container if needed."
+
+WORKDIR ${ROS_USER_HOME_DIR}
+
+ENTRYPOINT ["/home/ros/entrypoint.sh"]
+CMD ["/bin/bash"]
