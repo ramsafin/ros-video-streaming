@@ -66,13 +66,13 @@ int main(int argc, char const *argv[]) {
   }
 
   PLOG_INFO << "Driver info:";
-  PLOG_INFO << "\t- Driver: " << caps->driver;
-  PLOG_INFO << "\t- Card: " << caps->card;
-  PLOG_INFO << "\t- Bus info: " << caps->bus_info;
+  PLOG_INFO << "  - Driver: " << caps->driver;
+  PLOG_INFO << "  - Card: " << caps->card;
+  PLOG_INFO << "  - Bus info: " << caps->bus_info;
 
   auto print_cap = [&](uint32_t bit, const char *name) {
     if (caps->capabilities & bit) {
-      PLOG_INFO << "\t- " << name;
+      PLOG_INFO << "  - " << name;
     }
   };
 
