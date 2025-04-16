@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ros_video_streaming/frame.hpp"  // Frame
+#include "ros_video_streaming/frame.hpp"
 #include "ros_video_streaming/tools.hpp"
 
 #include <linux/videodev2.h>
@@ -14,11 +14,13 @@
 #include <utility>
 #include <vector>
 
-namespace lirs {
-
-class VideoCapture {
+namespace lirs
+{
+class VideoCapture
+{
 public:
-  VideoCapture(std::string device) : device_{std::move(device)} {
+  VideoCapture(std::string device) : device_{std::move(device)}
+  {
     handle_ = tools::open_device(device_);
 
     if (!IsOpened()) {
@@ -31,7 +33,8 @@ public:
     // 2..
   }
 
-  virtual ~VideoCapture() {
+  virtual ~VideoCapture()
+  {
     if (!IsOpened()) return;
     if (IsStreaming()) StopStreaming();
 
@@ -39,16 +42,19 @@ public:
   };
 
   // Device state
-  virtual bool IsOpened() const {
+  virtual bool IsOpened() const
+  {
     return handle_ != tools::CLOSED_HANDLE;
   };
 
-  virtual bool IsStreaming() const {
+  virtual bool IsStreaming() const
+  {
     return is_streaming_.load(std::memory_order_relaxed);
   };
 
   // Stream control
-  virtual bool StartStreaming() {
+  virtual bool StartStreaming()
+  {
     if (!IsOpened()) return false;
     if (IsStreaming()) return true;
     if (!checkCapabilities()) return false;
@@ -81,7 +87,8 @@ private:
   std::atomic_bool is_streaming_{false};
 
   // internals
-  bool checkCapabilities() const {
+  bool checkCapabilities() const
+  {
     if (!tools::check_input_capabilities(handle_)) {
       return false;
     }
@@ -95,7 +102,8 @@ private:
     return false;  // failed to query caps
   }
 
-  bool setupFormat() {
+  bool setupFormat()
+  {
     if (auto format = tools::set_format(handle_, V4L2_PIX_FMT_MJPEG, 640, 480)) {
       format_ = *format;
       return true;
@@ -104,7 +112,8 @@ private:
     return false;  // failed to set format
   }
 
-  bool setupFramerate() {
+  bool setupFramerate()
+  {
     if (auto framerate = tools::set_frame_rate(handle_, 1, 30)) {
       return true;
     }

@@ -4,14 +4,16 @@
 #include <cstdint>
 #include <vector>
 
-namespace lirs {
-
-class Frame final {
+namespace lirs
+{
+class Frame final
+{
 public:
   Frame() = default;
 
   Frame(const uint8_t* data, size_t length, uint64_t timestamp, uint64_t sequence = 0)
-  : data_{data, data + length}, sequence_(sequence), timestamp_{timestamp} {
+  : data_{data, data + length}, sequence_(sequence), timestamp_{timestamp}
+  {
     // ...
   }
 
@@ -24,15 +26,18 @@ public:
   Frame& operator=(Frame&&) noexcept = default;
 
   // Accessors
-  const std::vector<uint8_t>& data() const {
+  const std::vector<uint8_t>& data() const
+  {
     return data_;
   }
 
-  uint64_t timestamp() const {
+  uint64_t timestamp() const
+  {
     return timestamp_;
   }
 
-  uint64_t sequence() const {
+  uint64_t sequence() const
+  {
     return sequence_;
   }
 

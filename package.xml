@@ -16,8 +16,9 @@
     <depend>image_transport</depend>
     <depend>camera_info_manager</depend>
 
-    <!-- system -->
+    <!-- system deps -->
     <depend>v4l-utils</depend>
+    <depend>libv4l-dev</depend>
 
     <!-- The export tag contains other, unspecified, tags -->
     <export>
