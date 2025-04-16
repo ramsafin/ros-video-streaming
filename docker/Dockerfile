@@ -7,7 +7,7 @@ ARG ROS_USER_HOME_DIR=/home/${ROS_USER}
 
 # Allow installation of additional ROS packages during the build
 # Usage example: docker build --build-arg EXTRA_ROS_PKGS="ros-noetic-moveit ros-noetic-navigation" -t <ros_image> .
-ARG EXTRA_ROS_PKGS=""
+ARG EXTRA_ROS_PKGS="v4l-utils libv4l-dev clang-format clang-tidy"
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -50,7 +50,7 @@ USER ${ROS_USER}
 
 # Initialize rosdep (necessary to resolve ROS package dependencies) and update it
 # Note: rosdep update requires network access and may fail if no internet connection is available
-RUN rosdep init && \
+RUN sudo rosdep init && \
   rosdep update || echo "rosdep update failed. Please run manually inside the container if needed."
 
 WORKDIR ${ROS_USER_HOME_DIR}
