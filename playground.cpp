@@ -81,9 +81,9 @@ int main(int argc, char const* argv[])
   }
 
   PLOG_INFO << "Driver info:";
-  PLOG_INFO << "  - Driver: " << caps->driver;
-  PLOG_INFO << "  - Card: " << caps->card;
-  PLOG_INFO << "  - Bus info: " << caps->bus_info;
+  PLOG_INFO.printf("  - Driver: %s", caps->driver);
+  PLOG_INFO.printf("  - Card: %s", caps->card);
+  PLOG_INFO.printf("  - Bus: %s", caps->bus_info);
 
   // check required capabilities
   if (!(caps->capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
@@ -101,10 +101,58 @@ int main(int argc, char const* argv[])
   // TBD: see the suported formats, frame size, frame intervals (VIDIOC_ENUM_*)
   // Note: check V4L2_CAP_TIMEPERFRAME before calling VIDIOC_S_PARM
 
-  // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
-  // calls Note: some VIDIOC_G_* calls fail on unsupported features
+  // list supported pixel formats
+  v4l2_fmtdesc fmtd = {};
+  fmtd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-  // list supported formats
+  PLOG_INFO << "Supported pixel formats:";
+  for (fmtd.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FMT, &fmtd) == 0; fmtd.index++) {
+    PLOG_INFO << "  - " << fmtd.description;
+  }
+
+  // TBD: store the supported pixel formats in an efficient way (unordered_map?)
+
+  // list supported frame sizes (resolution in pixels)
+  v4l2_frmsizeenum frame_size = {};
+  frame_size.pixel_format = V4L2_PIX_FMT_MJPEG;  // V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG
+
+  PLOG_INFO << "Supported frame sizes:";
+
+  for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0;
+       frame_size.index++) {
+    if (frame_size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
+      PLOG_WARNING << "Continuous or stepwise framesize not handled";
+      continue;
+    }
+    PLOG_INFO.printf("  - %d x %d", frame_size.discrete.width, frame_size.discrete.height);
+  }
+
+  // TBD: store the supported frame sizes (pixel format) in an efficient way
+
+  // list supported frame rates (pixel format, frame size)
+  v4l2_frmivalenum frmival = {};
+  frmival.pixel_format = V4L2_PIX_FMT_MJPEG;
+  frmival.width = 640;
+  frmival.height = 480;
+
+  PLOG_INFO << "Supported frame rates";
+
+  for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0;
+       frmival.index++) {
+    if (!frmival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+      LOG_WARNING << "Continuous or stepwise intervals not handled";
+      continue;
+    }
+
+    PLOG_INFO.printf("  - %d/%d FPS", frmival.discrete.denominator, frmival.discrete.numerator);
+  }
+
+  // TBD: store the supported frame rates (pixel format, frame size) in an efficient way
+  // store the mappings pixel format - frame size - framerate (primary is pixel format, secondary is
+  // frame size)
+
+  // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
+  // Note: some VIDIOC_G_* calls fail on unsupported features
 
   return 0;
 
