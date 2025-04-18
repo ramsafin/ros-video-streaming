@@ -1,20 +1,21 @@
 #pragma once
 
-#include <cerrno>
-#include <cstring>
 #include <fcntl.h>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cerrno>
+#include <cstring>
 
-#include <iostream> // logging
+#include <iostream>  // logging
 #include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
 
-namespace lirs::tools {
+namespace lirs::tools
+{
 // constants
 inline constexpr int ERROR_CODE = -1;
 inline constexpr int CLOSED_HANDLE = -1;
@@ -32,7 +33,8 @@ inline constexpr uint32_t DEFAULT_FRAME_HEIGHT = 480;
 inline constexpr uint32_t DEFAULT_V4L2_PIXEL_FORMAT = V4L2_PIX_FMT_YUYV;
 
 // Check if device is ready for reading
-bool is_readable(int handle, timeval timeout = DEFAULT_SELECT_TIME) {
+bool is_readable(int handle, timeval timeout = DEFAULT_SELECT_TIME)
+{
   fd_set fds;
   FD_ZERO(&fds);
   FD_SET(handle, &fds);
@@ -48,7 +50,9 @@ bool is_readable(int handle, timeval timeout = DEFAULT_SELECT_TIME) {
 }
 
 // Safe ioctl wrapper with EINTR handling
-template <typename T> int xioctl(int fd, unsigned long request, T arg) {
+template <typename T>
+int xioctl(int fd, unsigned long request, T arg)
+{
   int ret;
 
   do {
@@ -63,12 +67,12 @@ template <typename T> int xioctl(int fd, unsigned long request, T arg) {
 }
 
 // Check if device is a character device
-bool is_character_device(const std::string &device) {
+bool is_character_device(const std::string& device)
+{
   struct stat status;
 
   if (stat(device.c_str(), &status) == ERROR_CODE) {
-    std::cerr << "ERROR: Cannot identify device " << device << " - "
-              << strerror(errno) << '\n';
+    std::cerr << "ERROR: Cannot identify device " << device << " - " << strerror(errno) << '\n';
     return false;
   }
 
@@ -81,7 +85,8 @@ bool is_character_device(const std::string &device) {
 }
 
 // Open V4L2 device
-int open_device(const std::string &device) {
+int open_device(const std::string& device)
+{
   if (!is_character_device(device)) {
     return CLOSED_HANDLE;
   }
@@ -89,15 +94,15 @@ int open_device(const std::string &device) {
   const int handle = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
   if (handle == CLOSED_HANDLE) {
-    std::cerr << "ERROR: Cannot open device " << device << " - "
-              << strerror(errno) << '\n';
+    std::cerr << "ERROR: Cannot open device " << device << " - " << strerror(errno) << '\n';
   }
 
   return handle;
 }
 
 // Close V4L2 device
-bool close_device(int handle) {
+bool close_device(int handle)
+{
   if (handle == CLOSED_HANDLE) {
     return false;
   }
@@ -111,7 +116,8 @@ bool close_device(int handle) {
 }
 
 // Query supported pixel formats
-std::unordered_set<uint32_t> query_pixel_formats(int fd) {
+std::unordered_set<uint32_t> query_pixel_formats(int fd)
+{
   std::unordered_set<uint32_t> formats;
 
   v4l2_fmtdesc desc = {};
@@ -126,7 +132,8 @@ std::unordered_set<uint32_t> query_pixel_formats(int fd) {
 }
 
 // Check input capabilities
-bool check_input_capabilities(int handle) {
+bool check_input_capabilities(int handle)
+{
   v4l2_input input = {};
 
   if (xioctl(handle, VIDIOC_G_INPUT, &input.index) == ERROR_CODE) {
@@ -153,7 +160,8 @@ bool check_input_capabilities(int handle) {
 }
 
 // Query device capabilities
-std::optional<v4l2_capability> query_capabilities(int fd) {
+std::optional<v4l2_capability> query_capabilities(int fd)
+{
   v4l2_capability caps = {};
 
   if (xioctl(fd, VIDIOC_QUERYCAP, &caps) == ERROR_CODE) {
@@ -165,8 +173,8 @@ std::optional<v4l2_capability> query_capabilities(int fd) {
 }
 
 // Validate required capabilities
-bool validate_capabilities(const v4l2_capability &caps,
-                           uint32_t required_caps) {
+bool validate_capabilities(const v4l2_capability& caps, uint32_t required_caps)
+{
   if ((caps.capabilities & required_caps) != required_caps) {
     std::cerr << "ERROR: Missing required capabilities\n";
     return false;
@@ -180,9 +188,9 @@ bool validate_capabilities(const v4l2_capability &caps,
 }
 
 // Set video format
-std::optional<v4l2_format> set_format(int handle, uint32_t pixel_format,
-                                      uint32_t width, uint32_t height,
-                                      bool try_format = false) {
+std::optional<v4l2_format> set_format(
+  int handle, uint32_t pixel_format, uint32_t width, uint32_t height, bool try_format = false)
+{
   v4l2_format fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   fmt.fmt.pix.pixelformat = pixel_format;
@@ -193,26 +201,25 @@ std::optional<v4l2_format> set_format(int handle, uint32_t pixel_format,
   const uint64_t req = try_format ? VIDIOC_TRY_FMT : VIDIOC_S_FMT;
 
   if (xioctl(handle, req, &fmt) == ERROR_CODE) {
-    std::cerr << "ERROR: VIDIOC_[S/TRY]_FMT failed - " << strerror(errno)
-              << '\n';
+    std::cerr << "ERROR: VIDIOC_[S/TRY]_FMT failed - " << strerror(errno) << '\n';
     return std::nullopt;
   }
 
-  if (fmt.fmt.pix.pixelformat != pixel_format || fmt.fmt.pix.width != width ||
-      fmt.fmt.pix.height != height) {
+  if (
+    fmt.fmt.pix.pixelformat != pixel_format || fmt.fmt.pix.width != width ||
+    fmt.fmt.pix.height != height) {
     return std::nullopt;
   }
 
   return fmt;
 }
 
-std::optional<v4l2_format> set_format(int handle, v4l2_format format,
-                                      bool try_format = false) {
+std::optional<v4l2_format> set_format(int handle, v4l2_format format, bool try_format = false)
+{
   const uint64_t req = try_format ? VIDIOC_TRY_FMT : VIDIOC_S_FMT;
 
   if (xioctl(handle, req, &format) == ERROR_CODE) {
-    std::cerr << "ERROR: VIDIOC_[S/TRY]_FMT failed - " << strerror(errno)
-              << '\n';
+    std::cerr << "ERROR: VIDIOC_[S/TRY]_FMT failed - " << strerror(errno) << '\n';
     return std::nullopt;
   }
 
@@ -220,7 +227,8 @@ std::optional<v4l2_format> set_format(int handle, v4l2_format format,
 }
 
 // Get current video format
-std::optional<v4l2_format> get_format(int handle) {
+std::optional<v4l2_format> get_format(int handle)
+{
   v4l2_format fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -232,7 +240,8 @@ std::optional<v4l2_format> get_format(int handle) {
   return fmt;
 }
 
-std::optional<v4l2_streamparm> get_stream_params(int handle) {
+std::optional<v4l2_streamparm> get_stream_params(int handle)
+{
   v4l2_streamparm parm = {};
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -245,8 +254,8 @@ std::optional<v4l2_streamparm> get_stream_params(int handle) {
 }
 
 // Set frame rate
-std::optional<v4l2_streamparm> set_frame_rate(int handle, uint32_t numerator,
-                                              uint32_t denominator) {
+std::optional<v4l2_streamparm> set_frame_rate(int handle, uint32_t numerator, uint32_t denominator)
+{
   v4l2_streamparm parm = {};
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   parm.parm.capture.timeperframe.numerator = numerator;
@@ -262,8 +271,9 @@ std::optional<v4l2_streamparm> set_frame_rate(int handle, uint32_t numerator,
 
 // Range check helper
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
-constexpr bool is_in_range(T low, T high, T value) noexcept {
+constexpr bool is_in_range(T low, T high, T value) noexcept
+{
   return value >= low && value <= high;
 }
 
-} // namespace lirs::tools
+}  // namespace lirs::tools

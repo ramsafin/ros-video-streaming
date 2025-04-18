@@ -4,64 +4,79 @@
 #include <plog/Initializers/ConsoleInitializer.h>
 #include <plog/Log.h>
 
-#include <cstdlib>    // EXIT_FAILURE
-#include <fcntl.h>    // open, O_RDWR, O_NONBLOCK
-#include <sys/mman.h> // mmap, unmmap
-#include <unistd.h>   // close
+#include <fcntl.h>     // open, O_RDWR, O_NONBLOCK
+#include <sys/mman.h>  // mmap, unmmap
+#include <unistd.h>    // close
+#include <cstdlib>     // EXIT_FAILURE
 
+#include <string>
 #include <vector>
 
-void logged_close(int fd) {
-  if (fd <= -1)
-    return;
+using namespace std::string_literals;
 
-  if (!close(fd)) {
-    std::cerr << "ERROR: could not close fd: " << fd << '\n';
+void logged_close(int fd)
+{
+  if (fd <= -1) return;
+
+  if (close(fd) != 0) {
+    PLOG_WARNING << "Failed to close fd: " << fd;
     return;
   }
 
-  std::cout << "INFO: closed fd: " << fd << '\n';
+  PLOG_INFO.printf("Closed device (fd: %d)", fd);
 }
 
-std::array<uint8_t, 4> fourcc(uint32_t pixel_format,
-                              bool is_big_endian = false) {
+std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false)
+{
   const uint32_t mask = 0xFF;
 
   if (is_big_endian) {
-    return {(pixel_format >> 24) & mask, (pixel_format >> 16) & mask,
-            (pixel_format >> 8) & mask, (pixel_format)&mask};
+    return {
+      (pixel_format >> 24) & mask, (pixel_format >> 16) & mask, (pixel_format >> 8) & mask,
+      (pixel_format)&mask};
   }
 
-  return {pixel_format & mask, (pixel_format >> 8) & mask,
-          (pixel_format >> 16) & mask, (pixel_format >> 24) & mask};
+  return {
+    pixel_format & mask, (pixel_format >> 8) & mask, (pixel_format >> 16) & mask,
+    (pixel_format >> 24) & mask};
 }
 
-void frame_callback(uint8_t *data, int length) {
+void frame_callback(uint8_t* data, int length)
+{
   std::cout << "INFO: captured frame [" << length << "] bytes\n";
 }
 
-struct FrameBuffer {
-  void *data;
+struct FrameBuffer
+{
+  void* data;
   size_t length;
 };
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[])
+{
+  // setup logging
   plog::init<plog::TxtFormatter>(plog::debug, plog::streamStdOut);
 
+  // specify video device (/dev/video*)
+  const auto device = "/dev/video0"s;
+
   // read/write non-blocking access to the device
-  PLOG_INFO << "Open device: /dev/video0 (O_RDWR | O_NONBLOCK)";
-  const int fd = open("/dev/video0", O_RDWR | O_NONBLOCK);
+  // TBD: create RAII wrapper for device
+  PLOG_INFO.printf("Open device: %s (flags = O_RDWR, O_NONBLOCK)", device.c_str());
+  const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
   if (fd == -1) {
-    PLOG_ERROR << "Failed to open /dev/video0: " << strerror(errno);
+    PLOG_ERROR.printf("Failed to open device: %s. %s", device.c_str(), strerror(errno));
     return EXIT_FAILURE;
   }
+
+  PLOG_INFO.printf("Opened device (fd: %d)", fd);
 
   // query device capabilities
   std::optional<v4l2_capability> caps = lirs::tools::query_capabilities(fd);
 
   if (!caps) {
-    std::cerr << "ERROR: could not query caps\n";
+    PLOG_ERROR << "Failed to query device capabilities";
     return EXIT_FAILURE;
   }
 
@@ -70,25 +85,15 @@ int main(int argc, char const *argv[]) {
   PLOG_INFO << "  - Card: " << caps->card;
   PLOG_INFO << "  - Bus info: " << caps->bus_info;
 
-  auto print_cap = [&](uint32_t bit, const char *name) {
-    if (caps->capabilities & bit) {
-      PLOG_INFO << "  - " << name;
-    }
-  };
-
-  // output required capabilities
-  PLOG_INFO << "Capabilities:";
-  print_cap(V4L2_CAP_VIDEO_CAPTURE, "Video Capture");
-  print_cap(V4L2_CAP_STREAMING, "Streaming I/O");
-
+  // check required capabilities
   if (!(caps->capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-    std::cerr << "ERROR: video capture not supported\n";
+    PLOG_ERROR << "Device does not support V4L2_CAP_VIDEO_CAPTURE";
     logged_close(fd);
     return EXIT_FAILURE;
   }
 
   if (!(caps->capabilities & V4L2_CAP_STREAMING)) {
-    std::cerr << "ERROR: streaming not supported\n";
+    PLOG_ERROR << "Device does not support V4L2_CAP_STREAMING";
     logged_close(fd);
     return EXIT_FAILURE;
   }
@@ -109,7 +114,7 @@ int main(int argc, char const *argv[]) {
   fmt.fmt.pix.width = 640;
   fmt.fmt.pix.height = 480;
   fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-  fmt.fmt.pix.field = V4L2_FIELD_ANY; // Progressive scan: V4L2_FIELD_NONE
+  fmt.fmt.pix.field = V4L2_FIELD_ANY;  // Progressive scan: V4L2_FIELD_NONE
 
   if (lirs::tools::xioctl(fd, VIDIOC_S_FMT, &fmt) == -1) {
     std::cerr << "ERROR: failed to set format\n";
@@ -120,15 +125,16 @@ int main(int argc, char const *argv[]) {
   if (lirs::tools::xioctl(fd, VIDIOC_G_FMT, &fmt) != -1) {
     auto [a, b, c, d] = fourcc(fmt.fmt.pix.pixelformat);
 
-    printf("INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width,
-           fmt.fmt.pix.height, a, b, c, d);
+    printf(
+      "INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b,
+      c, d);
   }
 
   // set frame rate
   v4l2_streamparm parm = {};
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  parm.parm.capture.timeperframe.numerator = 1;    // 1 second
-  parm.parm.capture.timeperframe.denominator = 30; // 30 FPS
+  parm.parm.capture.timeperframe.numerator = 1;     // 1 second
+  parm.parm.capture.timeperframe.denominator = 30;  // 30 FPS
 
   if (lirs::tools::xioctl(fd, VIDIOC_S_PARM, &parm) == -1) {
     std::cout << "WARN: failed to set frame rate\n";
@@ -141,7 +147,7 @@ int main(int argc, char const *argv[]) {
 
   // request buffer (MMAP)
   v4l2_requestbuffers buf_req = {};
-  buf_req.count = 4; // number of buffers (recommended: 4-8)
+  buf_req.count = 4;  // number of buffers (recommended: 4-8)
   buf_req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   buf_req.memory = V4L2_MEMORY_MMAP;
 
@@ -173,8 +179,7 @@ int main(int argc, char const *argv[]) {
     }
 
     // Note: check PROT_READ and PROT_WRITE
-    void *buffer =
-        mmap(nullptr, buf.length, PROT_READ, MAP_SHARED, fd, buf.m.offset);
+    void* buffer = mmap(nullptr, buf.length, PROT_READ, MAP_SHARED, fd, buf.m.offset);
 
     if (buffer == MAP_FAILED) {
       perror("ERROR: failed to mmap buffer");
@@ -240,8 +245,7 @@ int main(int argc, char const *argv[]) {
     }
 
     // process frames
-    frame_callback(reinterpret_cast<uint8_t *>(buffers[buf.index].data),
-                   buf.bytesused);
+    frame_callback(reinterpret_cast<uint8_t*>(buffers[buf.index].data), buf.bytesused);
 
     // requeue the buffer
     if (lirs::tools::xioctl(fd, VIDIOC_QBUF, &buf) == -1) {
@@ -258,7 +262,7 @@ int main(int argc, char const *argv[]) {
   }
 
   // unmap buffers
-  for (auto &buf : buffers) {
+  for (auto& buf : buffers) {
     munmap(buf.data, buf.length);
   }
 
