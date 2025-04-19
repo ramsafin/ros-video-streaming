@@ -1,6 +1,7 @@
 #ifndef LIRS_TOOLS_HPP
 #define LIRS_TOOLS_HPP
 
+#include "ros_video_streaming/inputs.hpp"
 #include "ros_video_streaming/types.hpp"
 
 #include <linux/videodev2.h>
@@ -12,8 +13,10 @@
 #include <cerrno>
 #include <cstring>
 
+#include <array>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -39,14 +42,13 @@ inline bool is_readable(types::FileDescriptor fd, timeval timeout = details::DEF
   const int ready = select(fd + 1, &fds, nullptr, nullptr, &timeout);
 
   if (ready == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR << "select() failed. " << strerror(errno);
+    PLOG_WARNING.printf("select() failed: fd = %d. %s", fd, strerror(errno));
     return false;
   }
 
   return ready > 0;
 }
 
-// Safe ioctl wrapper with EINTR handling
 template <typename T>
 int xioctl(types::FileDescriptor fd, unsigned long request, T arg)
 {
@@ -57,13 +59,12 @@ int xioctl(types::FileDescriptor fd, unsigned long request, T arg)
   } while (ret == details::IOCTL_ERROR_CODE && errno == EINTR);
 
   if (ret == details::IOCTL_ERROR_CODE) {
-    PLOG_WARNING << "ioctl() failed. " << strerror(errno);
+    PLOG_WARNING.printf("ioctl() failed: fd = %d. %s", fd, strerror(errno));
   }
 
   return ret;
 }
 
-// Check if device is a character device
 inline bool is_character_device(const std::string& device)
 {
   struct stat status;
@@ -81,14 +82,9 @@ inline bool is_character_device(const std::string& device)
   return true;
 }
 
-// Open V4L2 device
 inline types::FileDescriptor open_device(const std::string& device)
 {
-  if (!is_character_device(device)) {
-    return details::CLOSED_HANDLE;
-  }
-
-  const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
+  const types::FileDescriptor fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
   if (fd == details::CLOSED_HANDLE) {
     PLOG_WARNING.printf("Cannot open device: %s. %s", device.c_str(), strerror(errno));
@@ -99,10 +95,9 @@ inline types::FileDescriptor open_device(const std::string& device)
   return fd;
 }
 
-// Close V4L2 device
 inline bool close_device(types::FileDescriptor fd)
 {
-  if (fd == details::CLOSED_HANDLE) {
+  if (fd < 0) {
     PLOG_WARNING.printf("Invalid file descriptor: %d", fd);
     return false;
   }
@@ -115,59 +110,44 @@ inline bool close_device(types::FileDescriptor fd)
   return true;
 }
 
-// Check input capabilities
-inline bool check_input_capabilities(types::FileDescriptor fd)
+inline std::vector<v4l2_input> list_available_inputs(types::FileDescriptor fd)
 {
-  v4l2_input input = {};
+  auto inputs = std::vector<v4l2_input>{};
+  auto input = v4l2_input{};
 
-  if (xioctl(fd, VIDIOC_G_INPUT, &input.index) == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR.printf("VIDIOC_G_INPUT failed: fd = %d. %s", fd, strerror(errno));
-    return false;
+  for (input.index = 0; xioctl(fd, VIDIOC_ENUMINPUT, &input) == 0; input.index++) {
+    inputs.push_back(input);
   }
 
-  if (xioctl(fd, VIDIOC_ENUMINPUT, &input) == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR.printf("VIDIOC_ENUMINPUT failed: fd = %d. %s", fd, strerror(errno));
+  return inputs;
+}
+
+inline bool check_video_input(types::FileDescriptor fd, uint32_t index)
+{
+  auto input = v4l2_input{};
+  input.index = index;
+
+  if (xioctl(fd, VIDIOC_G_INPUT, &input.index) == details::IOCTL_ERROR_CODE) {
+    PLOG_ERROR.printf("VIDIOC_G_INPUT failed: fd = %d, index = %d. %s", fd, index, strerror(errno));
     return false;
   }
 
   if (input.type != V4L2_INPUT_TYPE_CAMERA) {
-    PLOG_ERROR.printf("Incorrect input type: fd = %d. Expected V4L2_INPUT_TYPE_CAMERA", fd);
+    PLOG_WARNING.printf("Not a video input: fd = %d, index = %d", fd, index);
     return false;
   }
 
   if (input.status & (V4L2_IN_ST_NO_POWER | V4L2_IN_ST_NO_SIGNAL)) {
-    PLOG_ERROR.printf("Device has power/signal issues: fd = %d", fd);
+    PLOG_WARNING.printf("Device has power/signal issues: fd = %d, index = %d", fd, index);
     return false;
   }
 
   return true;
 }
 
-// Query supported pixel formats
-inline std::vector<uint32_t> query_pixel_formats(types::FileDescriptor fd)
-{
-  std::vector<uint32_t> formats;
-  formats.reserve(10);
-
-  v4l2_fmtdesc desc = {};
-  desc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-  while (xioctl(fd, VIDIOC_ENUM_FMT, &desc) != details::IOCTL_ERROR_CODE) {
-    formats.push_back(desc.pixelformat);
-    desc.index++;
-  }
-
-  if (formats.empty()) {
-    PLOG_WARNING.printf("Empty list of supported pixel formats: fd = %d", fd);
-  }
-
-  return formats;
-}
-
-// Query device capabilities
 inline std::optional<v4l2_capability> query_capabilities(types::FileDescriptor fd)
 {
-  v4l2_capability caps = {};
+  auto caps = v4l2_capability{};
 
   if (xioctl(fd, VIDIOC_QUERYCAP, &caps) == details::IOCTL_ERROR_CODE) {
     PLOG_ERROR.printf("VIDIOC_QUERYCAP failed: fd = %d. %s", fd, strerror(errno));
@@ -175,6 +155,41 @@ inline std::optional<v4l2_capability> query_capabilities(types::FileDescriptor f
   }
 
   return caps;
+}
+
+inline bool check_video_streaming_caps(uint32_t caps)
+{
+  if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
+    PLOG_WARNING << "V4L2_CAP_VIDEO_CAPTURE not supported";
+    return false;
+  }
+
+  if (!(caps & V4L2_CAP_STREAMING)) {
+    PLOG_WARNING << "V4L2_CAP_STREAMING not supported";
+    return false;
+  }
+
+  return true;
+}
+
+inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::FileDescriptor fd)
+{
+  auto formats = std::vector<v4l2_fmtdesc>{};
+  formats.reserve(3);
+
+  auto format = v4l2_fmtdesc{};
+  format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+  while (xioctl(fd, VIDIOC_ENUM_FMT, &format) != details::IOCTL_ERROR_CODE) {
+    formats.push_back(format);
+    format.index++;
+  }
+
+  if (formats.empty()) {
+    PLOG_WARNING.printf("No supported pixel formats: fd = %d", fd);
+  }
+
+  return formats;
 }
 
 // Get current video format

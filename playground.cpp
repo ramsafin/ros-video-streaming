@@ -1,5 +1,7 @@
 #include "ros_video_streaming/tools.hpp"
 
+#include "ros_video_streaming/inputs.hpp"
+
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Initializers/ConsoleInitializer.h>
 #include <plog/Log.h>
@@ -50,19 +52,34 @@ int main(int argc, char const* argv[])
   // specify video device (/dev/video*)
   const auto device = "/dev/video0"s;
 
-  // read/write non-blocking access to the device
-  // TBD: create RAII wrapper for device
-  const int fd = tools::open_device(device);
-  // PLOG_INFO.printf("Open device: %s (flags = O_RDWR, O_NONBLOCK)", device.c_str());
-  // const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
-
-  if (fd == -1) {
-    PLOG_ERROR.printf("Failed to open device");
+  if (!tools::is_character_device(device)) {
+    PLOG_ERROR.printf("Not a character device: %s", device.c_str());
     return EXIT_FAILURE;
   }
 
+  const types::FileDescriptor fd = tools::open_device(device);
+
+  if (fd == -1) {
+    PLOG_ERROR.printf("Failed to open device: %s", device.c_str());
+    return EXIT_FAILURE;
+  }
+
+  // check device inputs
+  const std::vector<v4l2_input> inputs = tools::list_available_inputs(fd);
+
+  PLOG_INFO.printf("Available inputs:");
+
+  for (const auto& input : inputs) {
+    const std::string_view type = inputs::type2str(input.type);
+    PLOG_INFO.printf("  - index: %u, name: %s, type: %s", input.index, input.name, type.data());
+
+    // if (!tools::check_video_input(fd, input.index)) {
+    //   PLOG_WARNING.printf("Not a video input: %d", input.index);
+    // }
+  }
+
   // query device capabilities
-  std::optional<v4l2_capability> caps = lirs::tools::query_capabilities(fd);
+  const std::optional<v4l2_capability> caps = lirs::tools::query_capabilities(fd);
 
   if (!caps) {
     PLOG_ERROR << "Failed to query device capabilities";
@@ -75,28 +92,18 @@ int main(int argc, char const* argv[])
   PLOG_INFO.printf("  - Bus: %s", caps->bus_info);
 
   // check required capabilities
-  if (!(caps->capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-    PLOG_ERROR << "Device does not support video capture";
-    tools::close_device(fd);
-    return EXIT_FAILURE;
-  }
-
-  if (!(caps->capabilities & V4L2_CAP_STREAMING)) {
-    PLOG_ERROR << "Device does not support streaming I/O";
+  if (!tools::check_video_streaming_caps(caps->capabilities)) {
+    PLOG_ERROR << "Device does not support streaming and video capture";
     tools::close_device(fd);
     return EXIT_FAILURE;
   }
 
   // list supported pixel formats
-  v4l2_fmtdesc fmtd = {};
-  fmtd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  const std::vector<v4l2_fmtdesc> formats = tools::list_pixel_formats(fd);
 
-  PLOG_INFO << "Supported pixel formats:";
-  for (fmtd.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FMT, &fmtd) == 0; fmtd.index++) {
-    PLOG_INFO << "  - " << fmtd.description;
+  for (const auto& format : formats) {
+    PLOG_INFO.printf("  - %s", format.description);
   }
-
-  // TBD: store the supported pixel formats in an efficient way (unordered_map?)
 
   // list supported frame sizes (resolution in pixels)
   v4l2_frmsizeenum frame_size = {};
@@ -106,7 +113,7 @@ int main(int argc, char const* argv[])
   for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0;
        frame_size.index++) {
     if (frame_size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
-      PLOG_WARNING << "Continuous or stepwise framesize not handled";
+      PLOG_WARNING << "Continuous or stepwise frame sizes are not handled";
       continue;
     }
     PLOG_INFO.printf("  - %d x %d", frame_size.discrete.width, frame_size.discrete.height);
@@ -124,6 +131,10 @@ int main(int argc, char const* argv[])
 
   for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0;
        frmival.index++) {
+    if (frmival.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
+      PLOG_VERBOSE << "Continuous or stepwise frame rates are not handled";
+      continue;
+    }
     PLOG_INFO.printf("  - %d/%d", frmival.discrete.denominator, frmival.discrete.numerator);
   }
 
