@@ -54,8 +54,9 @@ add_library(v4l2_deps INTERFACE)
 target_link_libraries(v4l2_deps INTERFACE ${V4L2_LIBRARIES})
 target_include_directories(v4l2_deps INTERFACE include ${V4L2_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} STATIC src/capture.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC v4l2_deps plog::plog)
+# add_library(${PROJECT_NAME} STATIC src/capture.cpp)
+# target_link_libraries(${PROJECT_NAME} PUBLIC v4l2_deps plog::plog)
 
 add_executable(playground playground.cpp)
 target_link_libraries(playground PRIVATE v4l2_deps plog::plog)
+#include <plog/Log.h>

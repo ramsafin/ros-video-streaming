@@ -98,9 +98,6 @@ int main(int argc, char const* argv[])
     return EXIT_FAILURE;
   }
 
-  // TBD: see the suported formats, frame size, frame intervals (VIDIOC_ENUM_*)
-  // Note: check V4L2_CAP_TIMEPERFRAME before calling VIDIOC_S_PARM
-
   // list supported pixel formats
   v4l2_fmtdesc fmtd = {};
   fmtd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -139,7 +136,7 @@ int main(int argc, char const* argv[])
 
   for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0;
        frmival.index++) {
-    if (!frmival.type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+    if (!frmival.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
       LOG_WARNING << "Continuous or stepwise intervals not handled";
       continue;
     }
@@ -153,6 +150,7 @@ int main(int argc, char const* argv[])
 
   // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
   // Note: some VIDIOC_G_* calls fail on unsupported features
+  // Note: check V4L2_CAP_TIMEPERFRAME before calling VIDIOC_S_PARM
 
   return 0;
 
