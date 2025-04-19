@@ -57,7 +57,7 @@ int xioctl(types::FileDescriptor fd, unsigned long request, T arg)
   } while (ret == details::IOCTL_ERROR_CODE && errno == EINTR);
 
   if (ret == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR << "ioctl() failed. " << strerror(errno);
+    PLOG_WARNING << "ioctl() failed. " << strerror(errno);
   }
 
   return ret;
@@ -69,12 +69,12 @@ inline bool is_character_device(const std::string& device)
   struct stat status;
 
   if (stat(device.c_str(), &status) == details::IOCTL_ERROR_CODE) {
-    PLOG_WARNING.printf("Cannot identify device: %s. %s", device, strerror(errno));
+    PLOG_WARNING.printf("Cannot identify device: %s. %s", device.c_str(), strerror(errno));
     return false;
   }
 
   if (!S_ISCHR(status.st_mode)) {
-    PLOG_WARNING.printf("Not a character device: %s. %s", device, strerror(errno));
+    PLOG_WARNING.printf("Not a character device: %s. %s", device.c_str(), strerror(errno));
     return false;
   }
 
@@ -91,8 +91,10 @@ inline types::FileDescriptor open_device(const std::string& device)
   const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
   if (fd == details::CLOSED_HANDLE) {
-    PLOG_WARNING.printf("Cannot open device: %s. %s", device, strerror(errno));
+    PLOG_WARNING.printf("Cannot open device: %s. %s", device.c_str(), strerror(errno));
   }
+
+  PLOG_INFO.printf("Opened device: %s, fd = %d", device.c_str(), fd);
 
   return fd;
 }

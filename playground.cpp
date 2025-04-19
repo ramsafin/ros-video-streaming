@@ -14,18 +14,6 @@
 
 using namespace std::string_literals;
 
-void logged_close(int fd)
-{
-  if (fd <= -1) return;
-
-  if (close(fd) != 0) {
-    PLOG_WARNING << "Failed to close fd: " << fd;
-    return;
-  }
-
-  PLOG_INFO.printf("Closed device (fd: %d)", fd);
-}
-
 std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false)
 {
   const uint32_t mask = 0xFF;
@@ -52,6 +40,8 @@ struct FrameBuffer
   size_t length;
 };
 
+using namespace lirs;
+
 int main(int argc, char const* argv[])
 {
   // setup logging
@@ -62,15 +52,14 @@ int main(int argc, char const* argv[])
 
   // read/write non-blocking access to the device
   // TBD: create RAII wrapper for device
-  PLOG_INFO.printf("Open device: %s (flags = O_RDWR, O_NONBLOCK)", device.c_str());
-  const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
+  const int fd = tools::open_device(device);
+  // PLOG_INFO.printf("Open device: %s (flags = O_RDWR, O_NONBLOCK)", device.c_str());
+  // const int fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
   if (fd == -1) {
-    PLOG_ERROR.printf("Failed to open device: %s. %s", device.c_str(), strerror(errno));
+    PLOG_ERROR.printf("Failed to open device");
     return EXIT_FAILURE;
   }
-
-  PLOG_INFO.printf("Opened device (fd: %d)", fd);
 
   // query device capabilities
   std::optional<v4l2_capability> caps = lirs::tools::query_capabilities(fd);
@@ -87,14 +76,14 @@ int main(int argc, char const* argv[])
 
   // check required capabilities
   if (!(caps->capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-    PLOG_ERROR << "Device does not support V4L2_CAP_VIDEO_CAPTURE";
-    logged_close(fd);
+    PLOG_ERROR << "Device does not support video capture";
+    tools::close_device(fd);
     return EXIT_FAILURE;
   }
 
   if (!(caps->capabilities & V4L2_CAP_STREAMING)) {
-    PLOG_ERROR << "Device does not support V4L2_CAP_STREAMING";
-    logged_close(fd);
+    PLOG_ERROR << "Device does not support streaming I/O";
+    tools::close_device(fd);
     return EXIT_FAILURE;
   }
 
@@ -114,7 +103,6 @@ int main(int argc, char const* argv[])
   frame_size.pixel_format = V4L2_PIX_FMT_MJPEG;  // V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG
 
   PLOG_INFO << "Supported frame sizes:";
-
   for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0;
        frame_size.index++) {
     if (frame_size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
@@ -136,12 +124,7 @@ int main(int argc, char const* argv[])
 
   for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0;
        frmival.index++) {
-    if (!frmival.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
-      LOG_WARNING << "Continuous or stepwise intervals not handled";
-      continue;
-    }
-
-    PLOG_INFO.printf("  - %d/%d FPS", frmival.discrete.denominator, frmival.discrete.numerator);
+    PLOG_INFO.printf("  - %d/%d", frmival.discrete.denominator, frmival.discrete.numerator);
   }
 
   // TBD: store the supported frame rates (pixel format, frame size) in an efficient way
@@ -164,7 +147,6 @@ int main(int argc, char const* argv[])
 
   if (lirs::tools::xioctl(fd, VIDIOC_S_FMT, &fmt) == -1) {
     std::cerr << "ERROR: failed to set format\n";
-    logged_close(fd);
     return EXIT_FAILURE;
   }
 
@@ -199,13 +181,11 @@ int main(int argc, char const* argv[])
 
   if (lirs::tools::xioctl(fd, VIDIOC_REQBUFS, &buf_req) == -1) {
     perror("ERROR: failed to request buffers");
-    logged_close(fd);
     return EXIT_FAILURE;
   }
 
   if (buf_req.count < 2) {
     std::cerr << "ERROR: insufficient buffer memory\n";
-    logged_close(fd);
     return EXIT_FAILURE;
   }
 
@@ -220,7 +200,6 @@ int main(int argc, char const* argv[])
 
     if (lirs::tools::xioctl(fd, VIDIOC_QUERYBUF, &buf) == -1) {
       perror("ERROR: failed to query buffer");
-      logged_close(fd);
       return EXIT_FAILURE;
     }
 
@@ -229,7 +208,6 @@ int main(int argc, char const* argv[])
 
     if (buffer == MAP_FAILED) {
       perror("ERROR: failed to mmap buffer");
-      logged_close(fd);
       return EXIT_FAILURE;
     }
 
@@ -245,7 +223,6 @@ int main(int argc, char const* argv[])
 
     if (lirs::tools::xioctl(fd, VIDIOC_QBUF, &buf) == -1) {
       perror("ERROR: failed to queue buffer");
-      logged_close(fd);
       return EXIT_FAILURE;
     }
   }
@@ -255,7 +232,6 @@ int main(int argc, char const* argv[])
 
   if (lirs::tools::xioctl(fd, VIDIOC_STREAMON, &type) == -1) {
     perror("ERROR: failed to start streaming");
-    logged_close(fd);
     return EXIT_FAILURE;
   }
 
@@ -313,7 +289,7 @@ int main(int argc, char const* argv[])
   }
 
   // close device
-  logged_close(fd);
+  tools::close_device(fd);
 
   return 0;
 }
