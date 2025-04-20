@@ -1,8 +1,7 @@
 #ifndef LIRS_TOOLS_HPP
 #define LIRS_TOOLS_HPP
 
-#include "ros_video_streaming/inputs.hpp"
-#include "ros_video_streaming/types.hpp"
+#include <plog/Log.h>
 
 #include <linux/videodev2.h>
 
@@ -13,28 +12,23 @@
 #include <cerrno>
 #include <cstring>
 
-#include <array>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <vector>
 
-#include <plog/Log.h>
+#include "ros_video_streaming/types.hpp"
 
-namespace lirs::tools
-{
-namespace details
-{
+namespace lirs::tools {
+
+namespace details {
 inline constexpr auto IOCTL_ERROR_CODE = int{-1};
 inline constexpr auto DEFAULT_SELECT_TIME = timeval{1, 0};  // (secs, microsecs)
-inline constexpr auto CLOSED_HANDLE = types::FileDescriptor{-1};
-
 }  // namespace details
 
 // Check if device is ready for reading
-inline bool is_readable(types::FileDescriptor fd, timeval timeout = details::DEFAULT_SELECT_TIME)
-{
+inline bool is_readable(types::FileDescriptor fd, timeval timeout = details::DEFAULT_SELECT_TIME) {
   fd_set fds;
   FD_ZERO(&fds);
   FD_SET(fd, &fds);
@@ -50,8 +44,7 @@ inline bool is_readable(types::FileDescriptor fd, timeval timeout = details::DEF
 }
 
 template <typename T>
-int xioctl(types::FileDescriptor fd, unsigned long request, T arg)
-{
+int xioctl(types::FileDescriptor fd, unsigned long request, T arg) {
   int ret;
 
   do {
@@ -65,8 +58,7 @@ int xioctl(types::FileDescriptor fd, unsigned long request, T arg)
   return ret;
 }
 
-inline bool is_character_device(const std::string& device)
-{
+inline bool is_character_device(const std::string& device) {
   struct stat status;
 
   if (stat(device.c_str(), &status) == details::IOCTL_ERROR_CODE) {
@@ -82,11 +74,10 @@ inline bool is_character_device(const std::string& device)
   return true;
 }
 
-inline types::FileDescriptor open_device(const std::string& device)
-{
+inline types::FileDescriptor open_device(const std::string& device) {
   const types::FileDescriptor fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
 
-  if (fd == details::CLOSED_HANDLE) {
+  if (fd == -1) {
     PLOG_WARNING.printf("Cannot open device: %s. %s", device.c_str(), strerror(errno));
   }
 
@@ -95,8 +86,7 @@ inline types::FileDescriptor open_device(const std::string& device)
   return fd;
 }
 
-inline bool close_device(types::FileDescriptor fd)
-{
+inline bool close_device(types::FileDescriptor fd) {
   if (fd < 0) {
     PLOG_WARNING.printf("Invalid file descriptor: %d", fd);
     return false;
@@ -110,43 +100,18 @@ inline bool close_device(types::FileDescriptor fd)
   return true;
 }
 
-inline std::vector<v4l2_input> list_available_inputs(types::FileDescriptor fd)
-{
-  auto inputs = std::vector<v4l2_input>{};
+inline std::vector<v4l2_input> list_available_inputs(types::FileDescriptor fd) {
+  auto available_inputs = std::vector<v4l2_input>{};
   auto input = v4l2_input{};
 
   for (input.index = 0; xioctl(fd, VIDIOC_ENUMINPUT, &input) == 0; input.index++) {
-    inputs.push_back(input);
+    available_inputs.push_back(input);
   }
 
-  return inputs;
+  return available_inputs;
 }
 
-inline bool check_video_input(types::FileDescriptor fd, uint32_t index)
-{
-  auto input = v4l2_input{};
-  input.index = index;
-
-  if (xioctl(fd, VIDIOC_G_INPUT, &input.index) == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR.printf("VIDIOC_G_INPUT failed: fd = %d, index = %d. %s", fd, index, strerror(errno));
-    return false;
-  }
-
-  if (input.type != V4L2_INPUT_TYPE_CAMERA) {
-    PLOG_WARNING.printf("Not a video input: fd = %d, index = %d", fd, index);
-    return false;
-  }
-
-  if (input.status & (V4L2_IN_ST_NO_POWER | V4L2_IN_ST_NO_SIGNAL)) {
-    PLOG_WARNING.printf("Device has power/signal issues: fd = %d, index = %d", fd, index);
-    return false;
-  }
-
-  return true;
-}
-
-inline std::optional<v4l2_capability> query_capabilities(types::FileDescriptor fd)
-{
+inline std::optional<v4l2_capability> query_capabilities(types::FileDescriptor fd) {
   auto caps = v4l2_capability{};
 
   if (xioctl(fd, VIDIOC_QUERYCAP, &caps) == details::IOCTL_ERROR_CODE) {
@@ -157,8 +122,7 @@ inline std::optional<v4l2_capability> query_capabilities(types::FileDescriptor f
   return caps;
 }
 
-inline bool check_video_streaming_caps(uint32_t caps)
-{
+inline bool check_video_streaming_caps(uint32_t caps) {
   if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
     PLOG_WARNING << "V4L2_CAP_VIDEO_CAPTURE not supported";
     return false;
@@ -172,8 +136,7 @@ inline bool check_video_streaming_caps(uint32_t caps)
   return true;
 }
 
-inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::FileDescriptor fd)
-{
+inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::FileDescriptor fd) {
   auto formats = std::vector<v4l2_fmtdesc>{};
   formats.reserve(3);
 
@@ -193,8 +156,7 @@ inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::FileDescriptor fd)
 }
 
 // Get current video format
-inline std::optional<v4l2_format> get_format(types::FileDescriptor fd)
-{
+inline std::optional<v4l2_format> get_format(types::FileDescriptor fd) {
   v4l2_format fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -206,8 +168,7 @@ inline std::optional<v4l2_format> get_format(types::FileDescriptor fd)
   return fmt;
 }
 
-inline std::optional<v4l2_streamparm> get_stream_params(types::FileDescriptor fd)
-{
+inline std::optional<v4l2_streamparm> get_stream_params(types::FileDescriptor fd) {
   v4l2_streamparm parm = {};
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -221,9 +182,8 @@ inline std::optional<v4l2_streamparm> get_stream_params(types::FileDescriptor fd
 
 // Set video format
 inline std::optional<v4l2_format> set_format(
-  types::FileDescriptor fd, types::PixelFormat format, types::FrameWidth width,
-  types::FrameHeight height, bool try_format = false)
-{
+  types::FileDescriptor fd, types::PixelFormat format, types::FrameWidth width, types::FrameHeight height,
+  bool try_format = false) {
   v4l2_format fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   fmt.fmt.pix.pixelformat = format;
@@ -243,9 +203,7 @@ inline std::optional<v4l2_format> set_format(
 }
 
 // Set frame rate
-inline std::optional<v4l2_streamparm> set_frame_rate(
-  types::FileDescriptor fd, uint32_t num, uint32_t den)
-{
+inline std::optional<v4l2_streamparm> set_frame_rate(types::FileDescriptor fd, uint32_t num, uint32_t den) {
   v4l2_streamparm parm = {};
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   parm.parm.capture.timeperframe.numerator = num;
@@ -261,8 +219,7 @@ inline std::optional<v4l2_streamparm> set_frame_rate(
 
 // Range check helper
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
-constexpr bool is_in_range(T low, T high, T value) noexcept
-{
+constexpr bool is_in_range(T low, T high, T value) noexcept {
   return value >= low && value <= high;
 }
 

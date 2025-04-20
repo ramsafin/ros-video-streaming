@@ -1,7 +1,5 @@
 #include "ros_video_streaming/tools.hpp"
 
-#include "ros_video_streaming/inputs.hpp"
-
 #include <plog/Formatters/TxtFormatter.h>
 #include <plog/Initializers/ConsoleInitializer.h>
 #include <plog/Log.h>
@@ -16,40 +14,28 @@
 
 using namespace std::string_literals;
 
-std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false)
-{
+std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false) {
   const uint32_t mask = 0xFF;
 
   if (is_big_endian) {
-    return {
-      (pixel_format >> 24) & mask, (pixel_format >> 16) & mask, (pixel_format >> 8) & mask,
-      (pixel_format)&mask};
+    return {(pixel_format >> 24) & mask, (pixel_format >> 16) & mask, (pixel_format >> 8) & mask, (pixel_format)&mask};
   }
 
-  return {
-    pixel_format & mask, (pixel_format >> 8) & mask, (pixel_format >> 16) & mask,
-    (pixel_format >> 24) & mask};
+  return {pixel_format & mask, (pixel_format >> 8) & mask, (pixel_format >> 16) & mask, (pixel_format >> 24) & mask};
 }
 
-void frame_callback(uint8_t* data, int length)
-{
-  std::cout << "INFO: captured frame [" << length << "] bytes\n";
-}
+void frame_callback(uint8_t* data, int length) { std::cout << "INFO: captured frame [" << length << "] bytes\n"; }
 
-struct FrameBuffer
-{
+struct FrameBuffer {
   void* data;
   size_t length;
 };
 
 using namespace lirs;
 
-int main(int argc, char const* argv[])
-{
-  // setup logging
+int main(int argc, char const* argv[]) {
   plog::init<plog::TxtFormatter>(plog::debug, plog::streamStdOut);
 
-  // specify video device (/dev/video*)
   const auto device = "/dev/video0"s;
 
   if (!tools::is_character_device(device)) {
@@ -57,6 +43,7 @@ int main(int argc, char const* argv[])
     return EXIT_FAILURE;
   }
 
+  // TBD: RAII video device
   const types::FileDescriptor fd = tools::open_device(device);
 
   if (fd == -1) {
@@ -64,18 +51,14 @@ int main(int argc, char const* argv[])
     return EXIT_FAILURE;
   }
 
-  // check device inputs
+  // list and check inputs
   const std::vector<v4l2_input> inputs = tools::list_available_inputs(fd);
 
   PLOG_INFO.printf("Available inputs:");
 
   for (const auto& input : inputs) {
-    const std::string_view type = inputs::type2str(input.type);
-    PLOG_INFO.printf("  - index: %u, name: %s, type: %s", input.index, input.name, type.data());
-
-    // if (!tools::check_video_input(fd, input.index)) {
-    //   PLOG_WARNING.printf("Not a video input: %d", input.index);
-    // }
+    const auto type = types::InputType{input.type};
+    PLOG_INFO.printf("  - index: %u, name: %s, type: %s", input.index, input.name, type.name().data());
   }
 
   // query device capabilities
@@ -91,7 +74,7 @@ int main(int argc, char const* argv[])
   PLOG_INFO.printf("  - Card: %s", caps->card);
   PLOG_INFO.printf("  - Bus: %s", caps->bus_info);
 
-  // check required capabilities
+  // check video streaming caps
   if (!tools::check_video_streaming_caps(caps->capabilities)) {
     PLOG_ERROR << "Device does not support streaming and video capture";
     tools::close_device(fd);
@@ -110,8 +93,7 @@ int main(int argc, char const* argv[])
   frame_size.pixel_format = V4L2_PIX_FMT_MJPEG;  // V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG
 
   PLOG_INFO << "Supported frame sizes:";
-  for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0;
-       frame_size.index++) {
+  for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0; frame_size.index++) {
     if (frame_size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
       PLOG_WARNING << "Continuous or stepwise frame sizes are not handled";
       continue;
@@ -129,8 +111,7 @@ int main(int argc, char const* argv[])
 
   PLOG_INFO << "Supported frame rates";
 
-  for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0;
-       frmival.index++) {
+  for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0; frmival.index++) {
     if (frmival.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
       PLOG_VERBOSE << "Continuous or stepwise frame rates are not handled";
       continue;
@@ -164,9 +145,7 @@ int main(int argc, char const* argv[])
   if (lirs::tools::xioctl(fd, VIDIOC_G_FMT, &fmt) != -1) {
     auto [a, b, c, d] = fourcc(fmt.fmt.pix.pixelformat);
 
-    printf(
-      "INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b,
-      c, d);
+    printf("INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b, c, d);
   }
 
   // set frame rate
