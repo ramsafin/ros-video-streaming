@@ -14,16 +14,6 @@
 
 using namespace std::string_literals;
 
-std::array<uint8_t, 4> fourcc(uint32_t pixel_format, bool is_big_endian = false) {
-  const uint32_t mask = 0xFF;
-
-  if (is_big_endian) {
-    return {(pixel_format >> 24) & mask, (pixel_format >> 16) & mask, (pixel_format >> 8) & mask, (pixel_format)&mask};
-  }
-
-  return {pixel_format & mask, (pixel_format >> 8) & mask, (pixel_format >> 16) & mask, (pixel_format >> 24) & mask};
-}
-
 void frame_callback(uint8_t* data, int length) { std::cout << "INFO: captured frame [" << length << "] bytes\n"; }
 
 struct FrameBuffer {
@@ -32,6 +22,8 @@ struct FrameBuffer {
 };
 
 using namespace lirs;
+
+// TBD: namespace lirs => rvs (ros video streaming)
 
 int main(int argc, char const* argv[]) {
   plog::init<plog::TxtFormatter>(plog::debug, plog::streamStdOut);
@@ -44,7 +36,7 @@ int main(int argc, char const* argv[]) {
   }
 
   // TBD: RAII video device
-  const types::FileDescriptor fd = tools::open_device(device);
+  const types::descriptor_t fd = tools::open_device(device);
 
   if (fd == -1) {
     PLOG_ERROR.printf("Failed to open device: %s", device.c_str());
@@ -82,41 +74,29 @@ int main(int argc, char const* argv[]) {
   }
 
   // list supported pixel formats
-  const std::vector<v4l2_fmtdesc> formats = tools::list_pixel_formats(fd);
+  const std::vector<v4l2_fmtdesc> pix_formats = tools::list_pixel_formats(fd);
 
-  for (const auto& format : formats) {
-    PLOG_INFO.printf("  - %s", format.description);
-  }
+  for (const auto& format : pix_formats) {
+    // list supported frame sizes
+    const std::vector<v4l2_frmsizeenum> frame_sizes = tools::list_frame_sizes(fd, format.pixelformat);
 
-  // list supported frame sizes (resolution in pixels)
-  v4l2_frmsizeenum frame_size = {};
-  frame_size.pixel_format = V4L2_PIX_FMT_MJPEG;  // V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG
+    PLOG_INFO << formats::format2str(format.pixelformat).data() << ':';
 
-  PLOG_INFO << "Supported frame sizes:";
-  for (frame_size.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frame_size) == 0; frame_size.index++) {
-    if (frame_size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
-      PLOG_WARNING << "Continuous or stepwise frame sizes are not handled";
-      continue;
+    for (const auto& size : frame_sizes) {
+      // list supported frame rates
+      const auto frame_width = size.discrete.width;
+      const auto frame_height = size.discrete.height;
+
+      const std::vector<v4l2_frmivalenum> frame_rates =
+        tools::list_frame_rates(fd, format.pixelformat, frame_width, frame_height);
+
+      for (const auto& fps : frame_rates) {
+        PLOG_INFO.printf(
+          "  - %4d x %3d @ %3.2g fps", size.discrete.width, size.discrete.height,
+          static_cast<float>(fps.discrete.denominator) / fps.discrete.numerator);
+      }
+      PLOG_INFO << "------------";
     }
-    PLOG_INFO.printf("  - %d x %d", frame_size.discrete.width, frame_size.discrete.height);
-  }
-
-  // TBD: store the supported frame sizes (pixel format) in an efficient way
-
-  // list supported frame rates (pixel format, frame size)
-  v4l2_frmivalenum frmival = {};
-  frmival.pixel_format = V4L2_PIX_FMT_MJPEG;
-  frmival.width = 640;
-  frmival.height = 480;
-
-  PLOG_INFO << "Supported frame rates";
-
-  for (frmival.index = 0; lirs::tools::xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) == 0; frmival.index++) {
-    if (frmival.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
-      PLOG_VERBOSE << "Continuous or stepwise frame rates are not handled";
-      continue;
-    }
-    PLOG_INFO.printf("  - %d/%d", frmival.discrete.denominator, frmival.discrete.numerator);
   }
 
   // TBD: store the supported frame rates (pixel format, frame size) in an efficient way
@@ -140,12 +120,6 @@ int main(int argc, char const* argv[]) {
   if (lirs::tools::xioctl(fd, VIDIOC_S_FMT, &fmt) == -1) {
     std::cerr << "ERROR: failed to set format\n";
     return EXIT_FAILURE;
-  }
-
-  if (lirs::tools::xioctl(fd, VIDIOC_G_FMT, &fmt) != -1) {
-    auto [a, b, c, d] = fourcc(fmt.fmt.pix.pixelformat);
-
-    printf("INFO: selected format: %dx%d (4CC: %c%c%c%c)", fmt.fmt.pix.width, fmt.fmt.pix.height, a, b, c, d);
   }
 
   // set frame rate

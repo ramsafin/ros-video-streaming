@@ -14,7 +14,7 @@
 namespace lirs::formats {
 namespace details {
 struct PixelFormatInfo {
-  types::PixelFormat format;
+  types::pix_format_t format;
   std::string_view name;
 };
 
@@ -30,10 +30,10 @@ inline constexpr auto PIXEL_FORMAT_TABLE = std::array<PixelFormatInfo, 7>{{
 }};
 }  // namespace details
 
-inline constexpr auto V4L2_PIX_FMT_UNKNOWN = types::PixelFormat{0};
+inline constexpr auto V4L2_PIX_FMT_UNKNOWN = types::pix_format_t{0};
 inline constexpr auto V4L2_PIX_NAME_UNKNOWN = std::string_view{"Unknown"};
 
-inline constexpr std::string_view format2str(types::PixelFormat format) {
+inline constexpr std::string_view format2str(types::pix_format_t format) {
   for (const auto& entry : details::PIXEL_FORMAT_TABLE) {
     if (entry.format == format) {
       return entry.name;
@@ -42,7 +42,7 @@ inline constexpr std::string_view format2str(types::PixelFormat format) {
   return V4L2_PIX_NAME_UNKNOWN;
 }
 
-inline constexpr types::PixelFormat str2format(std::string_view name) {
+inline constexpr types::pix_format_t str2format(std::string_view name) {
   for (const auto& entry : details::PIXEL_FORMAT_TABLE) {
     if (entry.name == name) {
       return entry.format;
