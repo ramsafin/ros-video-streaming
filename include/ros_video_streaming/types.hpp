@@ -19,17 +19,36 @@ using height_t = decltype(v4l2_frmsizeenum::discrete.height);
 using input_type_t = decltype(v4l2_input::type);
 using input_stat_t = decltype(v4l2_input::status);
 
+using caps_t = decltype(v4l2_capability::capabilities);
 using pix_format_t = decltype(v4l2_fmtdesc::pixelformat);
 using fps_t = decltype(v4l2_frmivalenum::discrete.numerator);
 
 struct Resolution {
   width_t width;
   height_t height;
+
+  constexpr width_t total() const { return width * height; }
+
+  bool operator==(const Resolution& other) const { return width == other.width && height == other.height; }
 };
+
+namespace details {
+
+struct ResolutionHash {
+  std::size_t operator()(const Resolution& resolution) const {
+    std::size_t h1 = std::hash<width_t>{}(resolution.width);
+    std::size_t h2 = std::hash<height_t>{}(resolution.height);
+    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+  }
+};
+
+}  // namespace details
 
 struct FrameRate {
   fps_t num;
   fps_t den;
+
+  constexpr double as_double() const { return den == 0 ? 0.0 : static_cast<double>(den) / num; }
 };
 
 struct InputType {
@@ -72,21 +91,13 @@ struct InputStatus {
   }
 };
 
-namespace details {
-struct pair_hash {
-  template <class T1, class T2>
-  size_t operator()(const std::pair<T1, T2>& p) const {
-    const auto h1 = std::hash<T1>{}(p.first);
-    const auto h2 = std::hash<T2>{}(p.second);
-    return h1 ^ (h2 << 1);
-  }
-};
-}  // namespace details
-
 using FrameRateList = std::vector<FrameRate>;
-using ResolutionMap = std::unordered_map<Resolution, FrameRateList, details::pair_hash>;
+using ResolutionList = std::vector<Resolution>;
+using PixFormatList = std::vector<pix_format_t>;
 
-using CapabilityMap = std::unordered_map<pix_format_t, ResolutionMap>;
+using ResolutionMap = std::unordered_map<Resolution, FrameRateList, details::ResolutionHash>;
+
+using FormatMap = std::unordered_map<pix_format_t, ResolutionMap>;
 
 }  // namespace lirs::types
 

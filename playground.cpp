@@ -1,3 +1,4 @@
+#include "ros_video_streaming/conversion.hpp"
 #include "ros_video_streaming/tools.hpp"
 
 #include <plog/Formatters/TxtFormatter.h>
@@ -73,35 +74,41 @@ int main(int argc, char const* argv[]) {
     return EXIT_FAILURE;
   }
 
-  // list supported pixel formats
   const std::vector<v4l2_fmtdesc> pix_formats = tools::list_pixel_formats(fd);
+  types::PixFormatList pix_format_list = conversion::convert_pix_formats(pix_formats);
 
-  for (const auto& format : pix_formats) {
-    // list supported frame sizes
-    const std::vector<v4l2_frmsizeenum> frame_sizes = tools::list_frame_sizes(fd, format.pixelformat);
+  // formats dictionary
+  auto fmap = types::FormatMap{};
+  fmap.reserve(pix_format_list.size());
 
-    PLOG_INFO << formats::format2str(format.pixelformat).data() << ':';
+  for (const auto& pix_format : pix_format_list) {
+    const std::vector<v4l2_frmsizeenum> frame_sizes = tools::list_frame_sizes(fd, pix_format);
+    const types::ResolutionList resolution_list = conversion::convert_resolution(frame_sizes);
 
-    for (const auto& size : frame_sizes) {
-      // list supported frame rates
-      const auto frame_width = size.discrete.width;
-      const auto frame_height = size.discrete.height;
+    for (const auto& resolution : resolution_list) {
+      const std::vector<v4l2_frmivalenum> frame_rates = tools::list_frame_rates(fd, pix_format, resolution);
+      types::FrameRateList frame_rate_list = conversion::convert_frame_rate(frame_rates);
 
-      const std::vector<v4l2_frmivalenum> frame_rates =
-        tools::list_frame_rates(fd, format.pixelformat, frame_width, frame_height);
-
-      for (const auto& fps : frame_rates) {
-        PLOG_INFO.printf(
-          "  - %4d x %3d @ %3.2g fps", size.discrete.width, size.discrete.height,
-          static_cast<float>(fps.discrete.denominator) / fps.discrete.numerator);
-      }
-      PLOG_INFO << "------------";
+      fmap[pix_format].emplace(resolution, std::move(frame_rate_list));
     }
   }
 
-  // TBD: store the supported frame rates (pixel format, frame size) in an efficient way
-  // store the mappings pixel format - frame size - framerate (primary is pixel format, secondary is
-  // frame size)
+  // debug output
+  for (const auto& [pix_format, resolution_map] : fmap) {
+    for (const auto& [resolution, frame_rates] : resolution_map) {
+      const auto max_fps = std::max_element(
+        std::begin(frame_rates), std::end(frame_rates),
+        [](const types::FrameRate& left, const types::FrameRate& right) {
+          return left.as_double() < right.as_double();
+        });
+
+      for (const auto& fps : frame_rates) {
+        PLOG_INFO.printf(
+          "%5s: %4d x %4d @ %g", formats::format2str(pix_format).data(), resolution.width, resolution.height,
+          max_fps->den / static_cast<float>(max_fps->num));
+      }
+    }
+  }
 
   // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
   // Note: some VIDIOC_G_* calls fail on unsupported features

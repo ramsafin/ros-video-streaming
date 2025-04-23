@@ -29,7 +29,6 @@ inline constexpr auto IOCTL_ERROR_CODE = int{-1};
 inline constexpr auto DEFAULT_SELECT_TIME = timeval{1, 0};  // (secs, microsecs)
 }  // namespace details
 
-// Check if device is ready for reading
 inline bool is_readable(types::descriptor_t fd, timeval timeout = details::DEFAULT_SELECT_TIME) {
   fd_set fds;
   FD_ZERO(&fds);
@@ -129,7 +128,7 @@ inline std::optional<v4l2_capability> query_capabilities(types::descriptor_t fd)
   return caps;
 }
 
-inline bool check_video_streaming_caps(uint32_t caps) {
+inline bool check_video_streaming_caps(types::caps_t caps) {
   if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
     PLOG_WARNING << "V4L2_CAP_VIDEO_CAPTURE not supported";
     return false;
@@ -181,22 +180,25 @@ inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, ty
     PLOG_WARNING.printf("No supported frame sizes: fd = %d, format = %s", fd, formats::format2str(pix_format).data());
   }
 
-  std::sort(std::begin(frame_sizes), std::end(frame_sizes), [](const auto& left, const auto& right) {
-    return left.discrete.width < right.discrete.width;
-  });
+  const auto greater_or_eq = [](const v4l2_frmsizeenum& left, const v4l2_frmsizeenum& right) -> bool {
+    return left.discrete.width >= right.discrete.width && left.discrete.height >= right.discrete.height;
+  };
+
+  std::sort(std::begin(frame_sizes), std::end(frame_sizes), greater_or_eq);
 
   return frame_sizes;
 }
 
 inline std::vector<v4l2_frmivalenum> list_frame_rates(
-  types::descriptor_t fd, types::pix_format_t pix_format, types::width_t width, types::height_t height) {
+  types::descriptor_t fd, types::pix_format_t pix_format, const types::Resolution& resolution) {
   auto frame_rates = std::vector<v4l2_frmivalenum>{};
   frame_rates.reserve(8);
 
   auto fps = v4l2_frmivalenum{};
+
+  fps.width = resolution.width;
+  fps.height = resolution.height;
   fps.pixel_format = pix_format;
-  fps.width = width;
-  fps.height = height;
 
   for (fps.index = 0; xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &fps) == 0; fps.index++) {
     if (fps.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
@@ -209,18 +211,22 @@ inline std::vector<v4l2_frmivalenum> list_frame_rates(
 
   if (frame_rates.empty()) {
     PLOG_WARNING.printf(
-      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(pix_format).data(), width,
-      height);
+      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(pix_format).data(),
+      resolution.width, resolution.height);
   }
 
-  std::sort(std::begin(frame_rates), std::end(frame_rates), [](const auto& left, const auto& right) {
-    return left.discrete.numerator < right.discrete.numerator;
-  });
+  const auto greater_or_eq = [](const v4l2_frmivalenum& left, const v4l2_frmivalenum& right) {
+    const auto left_fps = left.discrete.numerator / static_cast<float>(left.discrete.denominator);
+    const auto right_fps = right.discrete.numerator / static_cast<float>(right.discrete.denominator);
+
+    return left_fps >= right_fps;
+  };
+
+  std::sort(std::begin(frame_rates), std::end(frame_rates), greater_or_eq);
 
   return frame_rates;
 }
 
-// Get current video format
 inline std::optional<v4l2_format> get_format(types::descriptor_t fd) {
   v4l2_format fmt = {};
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -245,34 +251,30 @@ inline std::optional<v4l2_streamparm> get_stream_params(types::descriptor_t fd) 
   return parm;
 }
 
-// Set video format
 inline std::optional<v4l2_format> set_format(
-  types::descriptor_t fd, types::pix_format_t format, types::width_t width, types::height_t height,
-  bool try_format = false) {
-  v4l2_format fmt = {};
-  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  types::descriptor_t fd, types::pix_format_t format, const types::Resolution& resolution) {
+  auto fmt = v4l2_format{};
+
   fmt.fmt.pix.pixelformat = format;
-  fmt.fmt.pix.width = width;
-  fmt.fmt.pix.height = height;
   fmt.fmt.pix.field = V4L2_FIELD_ANY;
+  fmt.fmt.pix.width = resolution.width;
+  fmt.fmt.pix.height = resolution.height;
+  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-  const uint64_t req = try_format ? VIDIOC_TRY_FMT : VIDIOC_S_FMT;
-
-  if (xioctl(fd, req, &fmt) == details::IOCTL_ERROR_CODE) {
-    const auto req = try_format ? "VIDIOC_TRY_FMT" : "VIDIOC_S_FMT";
-    PLOG_ERROR.printf("%s failed: fd = %d. %s", req, fd, strerror(errno));
+  if (xioctl(fd, VIDIOC_S_FMT, &fmt) == details::IOCTL_ERROR_CODE) {
+    PLOG_ERROR.printf("VIDIOC_S_FMT failed: fd = %d. %s", fd, strerror(errno));
     return std::nullopt;
   }
 
   return fmt;
 }
 
-// Set frame rate
-inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, uint32_t num, uint32_t den) {
-  v4l2_streamparm parm = {};
+inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, const types::FrameRate& rate) {
+  auto parm = v4l2_streamparm{};
+
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  parm.parm.capture.timeperframe.numerator = num;
-  parm.parm.capture.timeperframe.denominator = den;
+  parm.parm.capture.timeperframe.numerator = rate.num;
+  parm.parm.capture.timeperframe.denominator = rate.den;
 
   if (xioctl(fd, VIDIOC_S_PARM, &parm) == details::IOCTL_ERROR_CODE) {
     PLOG_ERROR.printf("VIDIOC_S_PARM failed: fd = %d. %s", fd, strerror(errno));
@@ -282,7 +284,6 @@ inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, uin
   return parm;
 }
 
-// Range check helper
 template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 constexpr bool is_in_range(T low, T high, T value) noexcept {
   return value >= low && value <= high;
