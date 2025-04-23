@@ -13,8 +13,7 @@ namespace lirs::types {
 using descriptor_t = int;
 using buffer_size_t = size_t;
 
-using width_t = decltype(v4l2_frmsizeenum::discrete.width);
-using height_t = decltype(v4l2_frmsizeenum::discrete.height);
+using resolution_t = decltype(v4l2_frmsizeenum::discrete.width);
 
 using input_type_t = decltype(v4l2_input::type);
 using input_stat_t = decltype(v4l2_input::status);
@@ -24,10 +23,10 @@ using pix_format_t = decltype(v4l2_fmtdesc::pixelformat);
 using fps_t = decltype(v4l2_frmivalenum::discrete.numerator);
 
 struct Resolution {
-  width_t width;
-  height_t height;
+  resolution_t width;
+  resolution_t height;
 
-  constexpr width_t total() const { return width * height; }
+  constexpr resolution_t total() const { return width * height; }
 
   bool operator==(const Resolution& other) const { return width == other.width && height == other.height; }
 };
@@ -36,8 +35,8 @@ namespace details {
 
 struct ResolutionHash {
   std::size_t operator()(const Resolution& resolution) const {
-    std::size_t h1 = std::hash<width_t>{}(resolution.width);
-    std::size_t h2 = std::hash<height_t>{}(resolution.height);
+    std::size_t h1 = std::hash<resolution_t>{}(resolution.width);
+    std::size_t h2 = std::hash<resolution_t>{}(resolution.height);
     return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
   }
 };

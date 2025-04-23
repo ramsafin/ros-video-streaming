@@ -93,23 +93,6 @@ int main(int argc, char const* argv[]) {
     }
   }
 
-  // debug output
-  for (const auto& [pix_format, resolution_map] : fmap) {
-    for (const auto& [resolution, frame_rates] : resolution_map) {
-      const auto max_fps = std::max_element(
-        std::begin(frame_rates), std::end(frame_rates),
-        [](const types::FrameRate& left, const types::FrameRate& right) {
-          return left.as_double() < right.as_double();
-        });
-
-      for (const auto& fps : frame_rates) {
-        PLOG_INFO.printf(
-          "%5s: %4d x %4d @ %g", formats::format2str(pix_format).data(), resolution.width, resolution.height,
-          max_fps->den / static_cast<float>(max_fps->num));
-      }
-    }
-  }
-
   // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
   // Note: some VIDIOC_G_* calls fail on unsupported features
   // Note: check V4L2_CAP_TIMEPERFRAME before calling VIDIOC_S_PARM

@@ -1,0 +1,907 @@
+[
+  {
+    "name": "V4L2_PIX_FMT_RGB332",
+    "fourcc": "RGB1",
+    "value": 826427218
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB444",
+    "fourcc": "R444",
+    "value": 875836498
+  },
+  {
+    "name": "V4L2_PIX_FMT_ARGB444",
+    "fourcc": "AR12",
+    "value": 842093121
+  },
+  {
+    "name": "V4L2_PIX_FMT_XRGB444",
+    "fourcc": "XR12",
+    "value": 842093144
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBA444",
+    "fourcc": "RA12",
+    "value": 842088786
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBX444",
+    "fourcc": "RX12",
+    "value": 842094674
+  },
+  {
+    "name": "V4L2_PIX_FMT_ABGR444",
+    "fourcc": "AB12",
+    "value": 842089025
+  },
+  {
+    "name": "V4L2_PIX_FMT_XBGR444",
+    "fourcc": "XB12",
+    "value": 842089048
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRA444",
+    "fourcc": "GA12",
+    "value": 842088775
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRX444",
+    "fourcc": "BX12",
+    "value": 842094658
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB555",
+    "fourcc": "RGBO",
+    "value": 1329743698
+  },
+  {
+    "name": "V4L2_PIX_FMT_ARGB555",
+    "fourcc": "AR15",
+    "value": 892424769
+  },
+  {
+    "name": "V4L2_PIX_FMT_XRGB555",
+    "fourcc": "XR15",
+    "value": 892424792
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBA555",
+    "fourcc": "RA15",
+    "value": 892420434
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBX555",
+    "fourcc": "RX15",
+    "value": 892426322
+  },
+  {
+    "name": "V4L2_PIX_FMT_ABGR555",
+    "fourcc": "AB15",
+    "value": 892420673
+  },
+  {
+    "name": "V4L2_PIX_FMT_XBGR555",
+    "fourcc": "XB15",
+    "value": 892420696
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRA555",
+    "fourcc": "BA15",
+    "value": 892420418
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRX555",
+    "fourcc": "BX15",
+    "value": 892426306
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB565",
+    "fourcc": "RGBP",
+    "value": 1346520914
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB555X",
+    "fourcc": "RGBQ",
+    "value": 1363298130
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB565X",
+    "fourcc": "RGBR",
+    "value": 1380075346
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGR666",
+    "fourcc": "BGRH",
+    "value": 1213351746
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGR24",
+    "fourcc": "BGR3",
+    "value": 861030210
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB24",
+    "fourcc": "RGB3",
+    "value": 859981650
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGR32",
+    "fourcc": "BGR4",
+    "value": 877807426
+  },
+  {
+    "name": "V4L2_PIX_FMT_ABGR32",
+    "fourcc": "AR24",
+    "value": 875713089
+  },
+  {
+    "name": "V4L2_PIX_FMT_XBGR32",
+    "fourcc": "XR24",
+    "value": 875713112
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRA32",
+    "fourcc": "RA24",
+    "value": 875708754
+  },
+  {
+    "name": "V4L2_PIX_FMT_BGRX32",
+    "fourcc": "RX24",
+    "value": 875714642
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGB32",
+    "fourcc": "RGB4",
+    "value": 876758866
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBA32",
+    "fourcc": "AB24",
+    "value": 875708993
+  },
+  {
+    "name": "V4L2_PIX_FMT_RGBX32",
+    "fourcc": "XB24",
+    "value": 875709016
+  },
+  {
+    "name": "V4L2_PIX_FMT_ARGB32",
+    "fourcc": "BA24",
+    "value": 875708738
+  },
+  {
+    "name": "V4L2_PIX_FMT_XRGB32",
+    "fourcc": "BX24",
+    "value": 875714626
+  },
+  {
+    "name": "V4L2_PIX_FMT_GREY",
+    "fourcc": "GREY",
+    "value": 1497715271
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y4",
+    "fourcc": "Y04 ",
+    "value": 540291161
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y6",
+    "fourcc": "Y06 ",
+    "value": 540422233
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y10",
+    "fourcc": "Y10 ",
+    "value": 540029273
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y12",
+    "fourcc": "Y12 ",
+    "value": 540160345
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y16",
+    "fourcc": "Y16 ",
+    "value": 540422489
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y10BPACK",
+    "fourcc": "Y10B",
+    "value": 1110454617
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y10P",
+    "fourcc": "Y10P",
+    "value": 1345335641
+  },
+  {
+    "name": "V4L2_PIX_FMT_PAL8",
+    "fourcc": "PAL8",
+    "value": 944521552
+  },
+  {
+    "name": "V4L2_PIX_FMT_UV8",
+    "fourcc": "UV8 ",
+    "value": 540563029
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUYV",
+    "fourcc": "YUYV",
+    "value": 1448695129
+  },
+  {
+    "name": "V4L2_PIX_FMT_YYUV",
+    "fourcc": "YYUV",
+    "value": 1448434009
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVYU",
+    "fourcc": "YVYU",
+    "value": 1431918169
+  },
+  {
+    "name": "V4L2_PIX_FMT_UYVY",
+    "fourcc": "UYVY",
+    "value": 1498831189
+  },
+  {
+    "name": "V4L2_PIX_FMT_VYUY",
+    "fourcc": "VYUY",
+    "value": 1498765654
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y41P",
+    "fourcc": "Y41P",
+    "value": 1345401945
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV444",
+    "fourcc": "Y444",
+    "value": 875836505
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV555",
+    "fourcc": "YUVO",
+    "value": 1331058009
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV565",
+    "fourcc": "YUVP",
+    "value": 1347835225
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV32",
+    "fourcc": "YUV4",
+    "value": 878073177
+  },
+  {
+    "name": "V4L2_PIX_FMT_AYUV32",
+    "fourcc": "AYUV",
+    "value": 1448433985
+  },
+  {
+    "name": "V4L2_PIX_FMT_XYUV32",
+    "fourcc": "XYUV",
+    "value": 1448434008
+  },
+  {
+    "name": "V4L2_PIX_FMT_VUYA32",
+    "fourcc": "VUYA",
+    "value": 1096373590
+  },
+  {
+    "name": "V4L2_PIX_FMT_VUYX32",
+    "fourcc": "VUYX",
+    "value": 1482249558
+  },
+  {
+    "name": "V4L2_PIX_FMT_HI240",
+    "fourcc": "HI24",
+    "value": 875710792
+  },
+  {
+    "name": "V4L2_PIX_FMT_HM12",
+    "fourcc": "HM12",
+    "value": 842091848
+  },
+  {
+    "name": "V4L2_PIX_FMT_M420",
+    "fourcc": "M420",
+    "value": 808596557
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV12",
+    "fourcc": "NV12",
+    "value": 842094158
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV21",
+    "fourcc": "NV21",
+    "value": 825382478
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV16",
+    "fourcc": "NV16",
+    "value": 909203022
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV61",
+    "fourcc": "NV61",
+    "value": 825644622
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV24",
+    "fourcc": "NV24",
+    "value": 875714126
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV42",
+    "fourcc": "NV42",
+    "value": 842290766
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV12M",
+    "fourcc": "NM12",
+    "value": 842091854
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV21M",
+    "fourcc": "NM21",
+    "value": 825380174
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV16M",
+    "fourcc": "NM16",
+    "value": 909200718
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV61M",
+    "fourcc": "NM61",
+    "value": 825642318
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV12MT",
+    "fourcc": "TM12",
+    "value": 842091860
+  },
+  {
+    "name": "V4L2_PIX_FMT_NV12MT_16X16",
+    "fourcc": "VM12",
+    "value": 842091862
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV410",
+    "fourcc": "YUV9",
+    "value": 961959257
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVU410",
+    "fourcc": "YVU9",
+    "value": 961893977
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV411P",
+    "fourcc": "411P",
+    "value": 1345401140
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV420",
+    "fourcc": "YU12",
+    "value": 842093913
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVU420",
+    "fourcc": "YV12",
+    "value": 842094169
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV422P",
+    "fourcc": "422P",
+    "value": 1345466932
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV420M",
+    "fourcc": "YM12",
+    "value": 842091865
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVU420M",
+    "fourcc": "YM21",
+    "value": 825380185
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV422M",
+    "fourcc": "YM16",
+    "value": 909200729
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVU422M",
+    "fourcc": "YM61",
+    "value": 825642329
+  },
+  {
+    "name": "V4L2_PIX_FMT_YUV444M",
+    "fourcc": "YM24",
+    "value": 875711833
+  },
+  {
+    "name": "V4L2_PIX_FMT_YVU444M",
+    "fourcc": "YM42",
+    "value": 842288473
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR8",
+    "fourcc": "BA81",
+    "value": 825770306
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG8",
+    "fourcc": "GBRG",
+    "value": 1196573255
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG8",
+    "fourcc": "GRBG",
+    "value": 1195528775
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB8",
+    "fourcc": "RGGB",
+    "value": 1111967570
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR10",
+    "fourcc": "BG10",
+    "value": 808535874
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG10",
+    "fourcc": "GB10",
+    "value": 808534599
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG10",
+    "fourcc": "BA10",
+    "value": 808534338
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB10",
+    "fourcc": "RG10",
+    "value": 808535890
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR10P",
+    "fourcc": "pBAA",
+    "value": 1094795888
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG10P",
+    "fourcc": "pGAA",
+    "value": 1094797168
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG10P",
+    "fourcc": "pgAA",
+    "value": 1094805360
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB10P",
+    "fourcc": "pRAA",
+    "value": 1094799984
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR10ALAW8",
+    "fourcc": "aBA8",
+    "value": 943800929
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG10ALAW8",
+    "fourcc": "aGA8",
+    "value": 943802209
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG10ALAW8",
+    "fourcc": "agA8",
+    "value": 943810401
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB10ALAW8",
+    "fourcc": "aRA8",
+    "value": 943805025
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR10DPCM8",
+    "fourcc": "bBA8",
+    "value": 943800930
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG10DPCM8",
+    "fourcc": "bGA8",
+    "value": 943802210
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG10DPCM8",
+    "fourcc": "BD10",
+    "value": 808535106
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB10DPCM8",
+    "fourcc": "bRA8",
+    "value": 943805026
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR12",
+    "fourcc": "BG12",
+    "value": 842090306
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG12",
+    "fourcc": "GB12",
+    "value": 842089031
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG12",
+    "fourcc": "BA12",
+    "value": 842088770
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB12",
+    "fourcc": "RG12",
+    "value": 842090322
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR12P",
+    "fourcc": "pBCC",
+    "value": 1128481392
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG12P",
+    "fourcc": "pGCC",
+    "value": 1128482672
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG12P",
+    "fourcc": "pgCC",
+    "value": 1128490864
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB12P",
+    "fourcc": "pRCC",
+    "value": 1128485488
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR14P",
+    "fourcc": "pBEE",
+    "value": 1162166896
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG14P",
+    "fourcc": "pGEE",
+    "value": 1162168176
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG14P",
+    "fourcc": "pgEE",
+    "value": 1162176368
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB14P",
+    "fourcc": "pREE",
+    "value": 1162170992
+  },
+  {
+    "name": "V4L2_PIX_FMT_SBGGR16",
+    "fourcc": "BYR2",
+    "value": 844257602
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGBRG16",
+    "fourcc": "GB16",
+    "value": 909197895
+  },
+  {
+    "name": "V4L2_PIX_FMT_SGRBG16",
+    "fourcc": "GR16",
+    "value": 909201991
+  },
+  {
+    "name": "V4L2_PIX_FMT_SRGGB16",
+    "fourcc": "RG16",
+    "value": 909199186
+  },
+  {
+    "name": "V4L2_PIX_FMT_HSV24",
+    "fourcc": "HSV3",
+    "value": 861295432
+  },
+  {
+    "name": "V4L2_PIX_FMT_HSV32",
+    "fourcc": "HSV4",
+    "value": 878072648
+  },
+  {
+    "name": "V4L2_PIX_FMT_MJPEG",
+    "fourcc": "MJPG",
+    "value": 1196444237
+  },
+  {
+    "name": "V4L2_PIX_FMT_JPEG",
+    "fourcc": "JPEG",
+    "value": 1195724874
+  },
+  {
+    "name": "V4L2_PIX_FMT_DV",
+    "fourcc": "dvsd",
+    "value": 1685288548
+  },
+  {
+    "name": "V4L2_PIX_FMT_MPEG",
+    "fourcc": "MPEG",
+    "value": 1195724877
+  },
+  {
+    "name": "V4L2_PIX_FMT_H264",
+    "fourcc": "H264",
+    "value": 875967048
+  },
+  {
+    "name": "V4L2_PIX_FMT_H264_NO_SC",
+    "fourcc": "AVC1",
+    "value": 826496577
+  },
+  {
+    "name": "V4L2_PIX_FMT_H264_MVC",
+    "fourcc": "M264",
+    "value": 875967053
+  },
+  {
+    "name": "V4L2_PIX_FMT_H263",
+    "fourcc": "H263",
+    "value": 859189832
+  },
+  {
+    "name": "V4L2_PIX_FMT_MPEG1",
+    "fourcc": "MPG1",
+    "value": 826757197
+  },
+  {
+    "name": "V4L2_PIX_FMT_MPEG2",
+    "fourcc": "MPG2",
+    "value": 843534413
+  },
+  {
+    "name": "V4L2_PIX_FMT_MPEG2_SLICE",
+    "fourcc": "MG2S",
+    "value": 1395803981
+  },
+  {
+    "name": "V4L2_PIX_FMT_MPEG4",
+    "fourcc": "MPG4",
+    "value": 877088845
+  },
+  {
+    "name": "V4L2_PIX_FMT_XVID",
+    "fourcc": "XVID",
+    "value": 1145656920
+  },
+  {
+    "name": "V4L2_PIX_FMT_VC1_ANNEX_G",
+    "fourcc": "VC1G",
+    "value": 1194410838
+  },
+  {
+    "name": "V4L2_PIX_FMT_VC1_ANNEX_L",
+    "fourcc": "VC1L",
+    "value": 1278296918
+  },
+  {
+    "name": "V4L2_PIX_FMT_VP8",
+    "fourcc": "VP80",
+    "value": 808996950
+  },
+  {
+    "name": "V4L2_PIX_FMT_VP9",
+    "fourcc": "VP90",
+    "value": 809062486
+  },
+  {
+    "name": "V4L2_PIX_FMT_HEVC",
+    "fourcc": "HEVC",
+    "value": 1129727304
+  },
+  {
+    "name": "V4L2_PIX_FMT_FWHT",
+    "fourcc": "FWHT",
+    "value": 1414027078
+  },
+  {
+    "name": "V4L2_PIX_FMT_FWHT_STATELESS",
+    "fourcc": "SFWH",
+    "value": 1213679187
+  },
+  {
+    "name": "V4L2_PIX_FMT_CPIA1",
+    "fourcc": "CPIA",
+    "value": 1095323715
+  },
+  {
+    "name": "V4L2_PIX_FMT_WNVA",
+    "fourcc": "WNVA",
+    "value": 1096175191
+  },
+  {
+    "name": "V4L2_PIX_FMT_SN9C10X",
+    "fourcc": "S910",
+    "value": 808532307
+  },
+  {
+    "name": "V4L2_PIX_FMT_SN9C20X_I420",
+    "fourcc": "S920",
+    "value": 808597843
+  },
+  {
+    "name": "V4L2_PIX_FMT_PWC1",
+    "fourcc": "PWC1",
+    "value": 826496848
+  },
+  {
+    "name": "V4L2_PIX_FMT_PWC2",
+    "fourcc": "PWC2",
+    "value": 843274064
+  },
+  {
+    "name": "V4L2_PIX_FMT_ET61X251",
+    "fourcc": "E625",
+    "value": 892483141
+  },
+  {
+    "name": "V4L2_PIX_FMT_SPCA501",
+    "fourcc": "S501",
+    "value": 825242963
+  },
+  {
+    "name": "V4L2_PIX_FMT_SPCA505",
+    "fourcc": "S505",
+    "value": 892351827
+  },
+  {
+    "name": "V4L2_PIX_FMT_SPCA508",
+    "fourcc": "S508",
+    "value": 942683475
+  },
+  {
+    "name": "V4L2_PIX_FMT_SPCA561",
+    "fourcc": "S561",
+    "value": 825636179
+  },
+  {
+    "name": "V4L2_PIX_FMT_PAC207",
+    "fourcc": "P207",
+    "value": 925905488
+  },
+  {
+    "name": "V4L2_PIX_FMT_MR97310A",
+    "fourcc": "M310",
+    "value": 808530765
+  },
+  {
+    "name": "V4L2_PIX_FMT_JL2005BCD",
+    "fourcc": "JL20",
+    "value": 808602698
+  },
+  {
+    "name": "V4L2_PIX_FMT_SN9C2028",
+    "fourcc": "SONX",
+    "value": 1481527123
+  },
+  {
+    "name": "V4L2_PIX_FMT_SQ905C",
+    "fourcc": "905C",
+    "value": 1127559225
+  },
+  {
+    "name": "V4L2_PIX_FMT_PJPG",
+    "fourcc": "PJPG",
+    "value": 1196444240
+  },
+  {
+    "name": "V4L2_PIX_FMT_OV511",
+    "fourcc": "O511",
+    "value": 825308495
+  },
+  {
+    "name": "V4L2_PIX_FMT_OV518",
+    "fourcc": "O518",
+    "value": 942749007
+  },
+  {
+    "name": "V4L2_PIX_FMT_STV0680",
+    "fourcc": "S680",
+    "value": 808990291
+  },
+  {
+    "name": "V4L2_PIX_FMT_TM6000",
+    "fourcc": "TM60",
+    "value": 808865108
+  },
+  {
+    "name": "V4L2_PIX_FMT_CIT_YYVYUY",
+    "fourcc": "CITV",
+    "value": 1448364355
+  },
+  {
+    "name": "V4L2_PIX_FMT_KONICA420",
+    "fourcc": "KONI",
+    "value": 1229868875
+  },
+  {
+    "name": "V4L2_PIX_FMT_JPGL",
+    "fourcc": "JPGL",
+    "value": 1279742026
+  },
+  {
+    "name": "V4L2_PIX_FMT_SE401",
+    "fourcc": "S401",
+    "value": 825242707
+  },
+  {
+    "name": "V4L2_PIX_FMT_S5C_UYVY_JPG",
+    "fourcc": "S5CI",
+    "value": 1229141331
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y8I",
+    "fourcc": "Y8I ",
+    "value": 541669465
+  },
+  {
+    "name": "V4L2_PIX_FMT_Y12I",
+    "fourcc": "Y12I",
+    "value": 1228026201
+  },
+  {
+    "name": "V4L2_PIX_FMT_Z16",
+    "fourcc": "Z16 ",
+    "value": 540422490
+  },
+  {
+    "name": "V4L2_PIX_FMT_MT21C",
+    "fourcc": "MT21",
+    "value": 825381965
+  },
+  {
+    "name": "V4L2_PIX_FMT_INZI",
+    "fourcc": "INZI",
+    "value": 1230655049
+  },
+  {
+    "name": "V4L2_PIX_FMT_SUNXI_TILED_NV12",
+    "fourcc": "ST12",
+    "value": 842093651
+  },
+  {
+    "name": "V4L2_PIX_FMT_CNF4",
+    "fourcc": "CNF4",
+    "value": 877022787
+  },
+  {
+    "name": "V4L2_PIX_FMT_IPU3_SBGGR10",
+    "fourcc": "ip3b",
+    "value": 1647538281
+  },
+  {
+    "name": "V4L2_PIX_FMT_IPU3_SGBRG10",
+    "fourcc": "ip3g",
+    "value": 1731424361
+  },
+  {
+    "name": "V4L2_PIX_FMT_IPU3_SGRBG10",
+    "fourcc": "ip3G",
+    "value": 1194553449
+  },
+  {
+    "name": "V4L2_PIX_FMT_IPU3_SRGGB10",
+    "fourcc": "ip3r",
+    "value": 1915973737
+  }
+]
