@@ -177,7 +177,7 @@ inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, ty
   }
 
   if (frame_sizes.empty()) {
-    PLOG_WARNING.printf("No supported frame sizes: fd = %d, format = %s", fd, formats::format2str(pix_format).data());
+    PLOG_WARNING.printf("No supported frame sizes: fd = %d, format = %s", fd, ...);
   }
 
   const auto greater_or_eq = [](const v4l2_frmsizeenum& left, const v4l2_frmsizeenum& right) -> bool {
