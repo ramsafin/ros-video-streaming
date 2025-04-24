@@ -1,4 +1,6 @@
-#pragma once
+// AUTO-GENERATED V4L2 PIXEL FORMAT HEADER
+#ifndef LIRS_V4L2_FORMATS_HPP
+#define LIRS_V4L2_FORMATS_HPP
 
 #include <linux/videodev2.h>
 
@@ -930,4 +932,5 @@ inline constexpr std::optional<PixelFormat> fourcc2format(uint32_t fourcc) {
   }
 }
 
-}  //  namespace lirs::formats
+}  // namespace lirs::formats
+#endif  // LIRS_V4L2_FORMATS_HPP
