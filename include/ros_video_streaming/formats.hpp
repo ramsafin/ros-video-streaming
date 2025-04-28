@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <string_view>
+#include <type_traits>
 
 namespace lirs::formats {
 
@@ -931,6 +932,8 @@ inline constexpr std::optional<PixelFormat> fourcc2format(uint32_t fourcc) {
       return std::nullopt;
   }
 }
+
+inline constexpr uint32_t format2fourcc(PixelFormat fmt) { return static_cast<uint32_t>(fmt); }
 
 }  // namespace lirs::formats
 #endif  // LIRS_V4L2_FORMATS_HPP

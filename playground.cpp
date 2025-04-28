@@ -75,21 +75,16 @@ int main(int argc, char const* argv[]) {
   }
 
   const std::vector<v4l2_fmtdesc> pix_formats = tools::list_pixel_formats(fd);
-  types::PixFormatList pix_format_list = conversion::convert_pix_formats(pix_formats);
 
   // formats dictionary
-  auto fmap = types::FormatMap{};
-  fmap.reserve(pix_format_list.size());
+  auto fmap = types::FormatMap{pix_formats.size()};
 
-  for (const auto& pix_format : pix_format_list) {
+  for (const auto& pix_format : conversion::convert_pix_formats(pix_formats)) {
     const std::vector<v4l2_frmsizeenum> frame_sizes = tools::list_frame_sizes(fd, pix_format);
-    const types::ResolutionList resolution_list = conversion::convert_resolution(frame_sizes);
 
-    for (const auto& resolution : resolution_list) {
+    for (const auto& resolution : conversion::convert_resolution(frame_sizes)) {
       const std::vector<v4l2_frmivalenum> frame_rates = tools::list_frame_rates(fd, pix_format, resolution);
-      types::FrameRateList frame_rate_list = conversion::convert_frame_rate(frame_rates);
-
-      fmap[pix_format].emplace(resolution, std::move(frame_rate_list));
+      fmap[pix_format].emplace(resolution, conversion::convert_frame_rate(frame_rates));
     }
   }
 

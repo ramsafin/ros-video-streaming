@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <utility>  // pair
 
+#include "ros_video_streaming/formats.hpp"
+
 namespace lirs::types {
 using descriptor_t = int;
 using buffer_size_t = size_t;
@@ -92,11 +94,11 @@ struct InputStatus {
 
 using FrameRateList = std::vector<FrameRate>;
 using ResolutionList = std::vector<Resolution>;
-using PixFormatList = std::vector<pix_format_t>;
+using PixFormatList = std::vector<formats::PixelFormat>;
 
 using ResolutionMap = std::unordered_map<Resolution, FrameRateList, details::ResolutionHash>;
 
-using FormatMap = std::unordered_map<pix_format_t, ResolutionMap>;
+using FormatMap = std::unordered_map<formats::PixelFormat, ResolutionMap>;
 
 }  // namespace lirs::types
 

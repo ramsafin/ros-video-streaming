@@ -36,7 +36,7 @@ inline bool is_readable(types::descriptor_t fd, timeval timeout = details::DEFAU
 
   const int ready = select(fd + 1, &fds, nullptr, nullptr, &timeout);
 
-  if (ready == details::IOCTL_ERROR_CODE) {
+  if (ready == -1) {
     PLOG_WARNING.printf("select() failed: fd = %d. %s", fd, strerror(errno));
     return false;
   }
@@ -160,12 +160,12 @@ inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::descriptor_t fd) {
   return pix_formats;
 }
 
-inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, types::pix_format_t pix_format) {
+inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, formats::PixelFormat fmt) {
   auto frame_sizes = std::vector<v4l2_frmsizeenum>{};
   frame_sizes.reserve(16);
 
   auto size = v4l2_frmsizeenum{};
-  size.pixel_format = pix_format;
+  size.pixel_format = formats::format2fourcc(fmt);
 
   for (size.index = 0; xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &size) == 0; size.index++) {
     if (size.type != V4L2_FRMSIZE_TYPE_DISCRETE) {
@@ -177,7 +177,7 @@ inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, ty
   }
 
   if (frame_sizes.empty()) {
-    PLOG_WARNING.printf("No supported frame sizes: fd = %d, format = %s", fd, ...);
+    PLOG_WARNING.printf("No supported frame sizes: fd = %d, format = %s", fd, formats::format2str(fmt).data());
   }
 
   const auto greater_or_eq = [](const v4l2_frmsizeenum& left, const v4l2_frmsizeenum& right) -> bool {
@@ -190,7 +190,7 @@ inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, ty
 }
 
 inline std::vector<v4l2_frmivalenum> list_frame_rates(
-  types::descriptor_t fd, types::pix_format_t pix_format, const types::Resolution& resolution) {
+  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& resolution) {
   auto frame_rates = std::vector<v4l2_frmivalenum>{};
   frame_rates.reserve(8);
 
@@ -198,7 +198,7 @@ inline std::vector<v4l2_frmivalenum> list_frame_rates(
 
   fps.width = resolution.width;
   fps.height = resolution.height;
-  fps.pixel_format = pix_format;
+  fps.pixel_format = formats::format2fourcc(fmt);
 
   for (fps.index = 0; xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &fps) == 0; fps.index++) {
     if (fps.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
@@ -211,8 +211,8 @@ inline std::vector<v4l2_frmivalenum> list_frame_rates(
 
   if (frame_rates.empty()) {
     PLOG_WARNING.printf(
-      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(pix_format).data(),
-      resolution.width, resolution.height);
+      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(fmt).data(), resolution.width,
+      resolution.height);
   }
 
   const auto greater_or_eq = [](const v4l2_frmivalenum& left, const v4l2_frmivalenum& right) {
@@ -252,29 +252,29 @@ inline std::optional<v4l2_streamparm> get_stream_params(types::descriptor_t fd) 
 }
 
 inline std::optional<v4l2_format> set_format(
-  types::descriptor_t fd, types::pix_format_t format, const types::Resolution& resolution) {
-  auto fmt = v4l2_format{};
+  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& resolution) {
+  auto format = v4l2_format{};
 
-  fmt.fmt.pix.pixelformat = format;
-  fmt.fmt.pix.field = V4L2_FIELD_ANY;
-  fmt.fmt.pix.width = resolution.width;
-  fmt.fmt.pix.height = resolution.height;
-  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  format.fmt.pix.pixelformat = formats::format2fourcc(fmt);
+  format.fmt.pix.field = V4L2_FIELD_ANY;
+  format.fmt.pix.width = resolution.width;
+  format.fmt.pix.height = resolution.height;
+  format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-  if (xioctl(fd, VIDIOC_S_FMT, &fmt) == details::IOCTL_ERROR_CODE) {
+  if (xioctl(fd, VIDIOC_S_FMT, &format) == details::IOCTL_ERROR_CODE) {
     PLOG_ERROR.printf("VIDIOC_S_FMT failed: fd = %d. %s", fd, strerror(errno));
     return std::nullopt;
   }
 
-  return fmt;
+  return format;
 }
 
-inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, const types::FrameRate& rate) {
+inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, const types::FrameRate& fps) {
   auto parm = v4l2_streamparm{};
 
   parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  parm.parm.capture.timeperframe.numerator = rate.num;
-  parm.parm.capture.timeperframe.denominator = rate.den;
+  parm.parm.capture.timeperframe.numerator = fps.num;
+  parm.parm.capture.timeperframe.denominator = fps.den;
 
   if (xioctl(fd, VIDIOC_S_PARM, &parm) == details::IOCTL_ERROR_CODE) {
     PLOG_ERROR.printf("VIDIOC_S_PARM failed: fd = %d. %s", fd, strerror(errno));

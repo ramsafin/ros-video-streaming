@@ -57,7 +57,8 @@ def generate_header(formats: List[PixelFormat], out_filepath: os.PathLike) -> No
         out.write("#include <linux/videodev2.h>\n\n")
         out.write("#include <cstdint>\n")
         out.write("#include <optional>\n")
-        out.write("#include <string_view>\n\n")
+        out.write("#include <string_view>\n")
+        out.write("#include <type_traits>\n\n")
 
         out.write("namespace lirs::formats {\n\n")
 
@@ -83,6 +84,11 @@ def generate_header(formats: List[PixelFormat], out_filepath: os.PathLike) -> No
             out.write(f"    case {fmt.value}:\n      return PixelFormat::{fmt.name};\n")
         out.write("    default:\n      return std::nullopt;\n")
         out.write("  }\n")
+        out.write("}\n\n")
+
+        #  underlying type
+        out.write("inline constexpr uint32_t format2fourcc(PixelFormat fmt) {\n")
+        out.write("  return static_cast<uint32_t>(fmt);\n")
         out.write("}\n\n")
 
         out.write("}  // namespace lirs::formats\n")
@@ -123,7 +129,7 @@ def main() -> None:
         generate_header(formats, args.out)
 
     elif args.command == "all":
-        formats = parse_v4l2_header(args.in_file)
+        formats = parse_v4l2_header(args.header)
         generate_header(formats, args.out)
 
 
