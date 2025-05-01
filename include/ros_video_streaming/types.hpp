@@ -28,9 +28,13 @@ struct Resolution {
   resolution_t width;
   resolution_t height;
 
-  constexpr resolution_t total() const { return width * height; }
+  constexpr resolution_t total() const {
+    return width * height;
+  }
 
-  bool operator==(const Resolution& other) const { return width == other.width && height == other.height; }
+  bool operator==(const Resolution& other) const {
+    return width == other.width && height == other.height;
+  }
 };
 
 namespace details {
@@ -49,14 +53,19 @@ struct FrameRate {
   fps_t num;
   fps_t den;
 
-  constexpr double as_double() const { return den == 0 ? 0.0 : static_cast<double>(den) / num; }
+  constexpr double as_double() const {
+    return den == 0 ? 0.0 : static_cast<double>(den) / num;
+  }
 };
 
 struct InputType {
   input_type_t value;
 
-  constexpr explicit InputType(input_type_t v) : value{v} {}
-  constexpr operator input_type_t() const { return value; }
+  constexpr explicit InputType(input_type_t v) : value{v} {
+  }
+  constexpr operator input_type_t() const {
+    return value;
+  }
 
   constexpr std::string_view name() const {
     switch (value) {
@@ -75,8 +84,11 @@ struct InputType {
 struct InputStatus {
   input_stat_t value;
 
-  constexpr explicit InputStatus(input_stat_t v) : value{v} {}
-  constexpr operator input_stat_t() const { return value; }
+  constexpr explicit InputStatus(input_stat_t v) : value{v} {
+  }
+  constexpr operator input_stat_t() const {
+    return value;
+  }
 
   constexpr std::string_view name() const {
     switch (value) {
@@ -99,6 +111,11 @@ using PixFormatList = std::vector<formats::PixelFormat>;
 using ResolutionMap = std::unordered_map<Resolution, FrameRateList, details::ResolutionHash>;
 
 using FormatMap = std::unordered_map<formats::PixelFormat, ResolutionMap>;
+
+struct FrameBuffer {
+  void* data;
+  size_t length;
+};
 
 }  // namespace lirs::types
 

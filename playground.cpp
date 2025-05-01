@@ -20,11 +20,6 @@ void frame_callback(uint8_t* data, int length) {
   std::cout << "INFO: captured frame [" << length << "] bytes\n";
 }
 
-struct FrameBuffer {
-  void* data;
-  size_t length;
-};
-
 struct VideoDevice {
   explicit VideoDevice(const std::string& name) : name_{name} {
     fd_ = tools::open_device(name);
@@ -114,7 +109,7 @@ int main(int argc, char const* argv[]) {
     }
   }
 
-  // FIXME: check if format is set correctly
+  // set format
   const auto format = tools::set_format(fd, formats::PixelFormat::V4L2_YUYV, {320, 240});
 
   if (!format) {
@@ -122,6 +117,7 @@ int main(int argc, char const* argv[]) {
     return EXIT_FAILURE;
   }
 
+  // set framerate
   const auto framerate = tools::set_frame_rate(fd, {1, 30});
 
   if (!framerate) {
@@ -129,51 +125,30 @@ int main(int argc, char const* argv[]) {
     return EXIT_FAILURE;
   }
 
-  return 0;
+  // request buffer
+  const auto num_buffers = tools::request_mmap_buffers(fd, 32);
 
-  // request buffer (MMAP)
-  v4l2_requestbuffers buf_req = {};
-  buf_req.count = 4;  // number of buffers (recommended: 4-8)
-  buf_req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  buf_req.memory = V4L2_MEMORY_MMAP;
-
-  if (lirs::tools::xioctl(fd, VIDIOC_REQBUFS, &buf_req) == -1) {
-    perror("ERROR: failed to request buffers");
+  if (!num_buffers || *num_buffers < 2) {
+    PLOG_ERROR << "Insufficient buffer memory";
     return EXIT_FAILURE;
   }
 
-  if (buf_req.count < 2) {
-    std::cerr << "ERROR: insufficient buffer memory\n";
-    return EXIT_FAILURE;
-  }
+  PLOG_INFO << "Allocated buffers (mmap): count = " << *num_buffers;
 
   // map buffers into user-space
-  std::vector<FrameBuffer> buffers(buf_req.count);
+  std::vector<types::FrameBuffer> buffers(*num_buffers);
 
-  for (int index = 0; index < buf_req.count; index++) {
-    v4l2_buffer buf = {};
-    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buf.memory = V4L2_MEMORY_MMAP;
-    buf.index = index;
-
-    if (lirs::tools::xioctl(fd, VIDIOC_QUERYBUF, &buf) == -1) {
-      perror("ERROR: failed to query buffer");
-      return EXIT_FAILURE;
-    }
-
-    // Note: check PROT_READ and PROT_WRITE
-    void* buffer = mmap(nullptr, buf.length, PROT_READ, MAP_SHARED, fd, buf.m.offset);
-
-    if (buffer == MAP_FAILED) {
-      perror("ERROR: failed to mmap buffer");
-      return EXIT_FAILURE;
-    }
-
-    buffers[index] = {buffer, buf.length};
+  if (!tools::mmap_buffers(fd, buffers)) {
+    PLOG_ERROR << "Could not mmap buffers into user-space";
+    return EXIT_FAILURE;
   }
 
+  PLOG_INFO << "Mapped buffers into user-space (mmap)";
+
+  return EXIT_SUCCESS;
+
   // queue buffers for streaming
-  for (int index = 0; index < buf_req.count; index++) {
+  for (int index = 0; index < *num_buffers; index++) {
     v4l2_buffer buf = {};
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;

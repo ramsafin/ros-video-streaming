@@ -7,6 +7,7 @@
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cerrno>
@@ -235,30 +236,6 @@ inline std::vector<v4l2_frmivalenum> list_frame_rates(
   return frame_rates;
 }
 
-inline std::optional<v4l2_format> get_format(types::descriptor_t fd) {
-  v4l2_format fmt = {};
-  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-  if (xioctl(fd, VIDIOC_G_FMT, &fmt) == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR.printf("VIDIOC_G_FMT failed: fd = %d. %s", fd, strerror(errno));
-    return std::nullopt;
-  }
-
-  return fmt;
-}
-
-inline std::optional<v4l2_streamparm> get_stream_params(types::descriptor_t fd) {
-  v4l2_streamparm parm = {};
-  parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-  if (xioctl(fd, VIDIOC_G_PARM, &parm) == details::IOCTL_ERROR_CODE) {
-    PLOG_ERROR.printf("VIDIOC_G_PARM failed: fd = %d. %s", fd, strerror(errno));
-    return std::nullopt;
-  }
-
-  return parm;
-}
-
 inline std::optional<v4l2_format> set_format(
   types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& res) {
   auto format = v4l2_format{};
@@ -314,9 +291,48 @@ inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, con
   return parm;
 }
 
-template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
-constexpr bool is_in_range(T low, T high, T value) noexcept {
-  return value >= low && value <= high;
+inline std::optional<size_t> request_mmap_buffers(types::descriptor_t fd, size_t num_buffers = 4) {
+  auto buf_request = v4l2_requestbuffers{};
+  buf_request.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  buf_request.memory = V4L2_MEMORY_MMAP;
+  buf_request.count = num_buffers;
+
+  if (xioctl(fd, VIDIOC_REQBUFS, &buf_request) == details::IOCTL_ERROR_CODE) {
+    PLOG_ERROR.printf("Failed to request mmap buffers: count = %d", num_buffers);
+    return std::nullopt;
+  }
+
+  if (buf_request.count != num_buffers) {
+    PLOG_WARNING.printf("Buffers count adjusted by device: expected %d, got %d", num_buffers, buf_request.count);
+  }
+
+  return buf_request.count;
+}
+
+inline bool mmap_buffers(types::descriptor_t fd, std::vector<types::FrameBuffer>& buffers) {
+  auto buf = v4l2_buffer{};
+  buf.memory = V4L2_MEMORY_MMAP;
+  buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+  for (int index = 0; index < static_cast<int>(buffers.size()); index++) {
+    buf.index = index;
+
+    if (xioctl(fd, VIDIOC_QUERYBUF, &buf) == details::IOCTL_ERROR_CODE) {
+      PLOG_ERROR << "Failed to query buffer: index = " << index;
+      return false;
+    }
+
+    void* ptr = mmap(nullptr, buf.length, PROT_READ, MAP_SHARED, fd, buf.m.offset);
+
+    if (ptr == MAP_FAILED) {
+      PLOG_ERROR << "Failed to mmap buffer: index = " << index;
+      return false;
+    }
+
+    buffers[index] = {ptr, buf.length};
+  }
+
+  return true;
 }
 
 }  // namespace lirs::tools
