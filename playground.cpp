@@ -13,36 +13,62 @@
 #include <string>
 #include <vector>
 
+using namespace lirs;
 using namespace std::string_literals;
 
-void frame_callback(uint8_t* data, int length) { std::cout << "INFO: captured frame [" << length << "] bytes\n"; }
+void frame_callback(uint8_t* data, int length) {
+  std::cout << "INFO: captured frame [" << length << "] bytes\n";
+}
 
 struct FrameBuffer {
   void* data;
   size_t length;
 };
 
-using namespace lirs;
+struct VideoDevice {
+  explicit VideoDevice(const std::string& name) : name_{name} {
+    fd_ = tools::open_device(name);
+  }
+
+  types::descriptor_t fd() const {
+    return fd_;
+  }
+
+  bool isOpen() const {
+    return fd_ != -1;
+  }
+
+  ~VideoDevice() {
+    tools::close_device(fd_);
+    PLOG_INFO.printf("Closed video device: %s", name_.c_str());
+  }
+
+private:
+  std::string name_;
+  types::descriptor_t fd_{-1};
+};
 
 // TBD: namespace lirs => rvs (ros video streaming)
 
 int main(int argc, char const* argv[]) {
   plog::init<plog::TxtFormatter>(plog::debug, plog::streamStdOut);
 
-  const auto device = "/dev/video0"s;
-
-  if (!tools::is_character_device(device)) {
-    PLOG_ERROR.printf("Not a character device: %s", device.c_str());
-    return EXIT_FAILURE;
-  }
-
   // TBD: RAII video device
-  const types::descriptor_t fd = tools::open_device(device);
+  const auto dev_name = "/dev/video0"s;
 
-  if (fd == -1) {
-    PLOG_ERROR.printf("Failed to open device: %s", device.c_str());
+  if (!tools::is_character_device(dev_name)) {
+    PLOG_ERROR.printf("Not a character device: %s", dev_name.c_str());
     return EXIT_FAILURE;
   }
+
+  const auto device = VideoDevice(dev_name);
+
+  if (!device.isOpen()) {
+    PLOG_ERROR.printf("Failed to open device: %s", dev_name.c_str());
+    return EXIT_FAILURE;
+  }
+
+  const types::descriptor_t fd = device.fd();
 
   // list and check inputs
   const std::vector<v4l2_input> inputs = tools::list_available_inputs(fd);
@@ -70,14 +96,14 @@ int main(int argc, char const* argv[]) {
   // check video streaming caps
   if (!tools::check_video_streaming_caps(caps->capabilities)) {
     PLOG_ERROR << "Device does not support streaming and video capture";
-    tools::close_device(fd);
     return EXIT_FAILURE;
   }
 
+  // query available formats: pixel format, resolution, frame rate
   const std::vector<v4l2_fmtdesc> pix_formats = tools::list_pixel_formats(fd);
 
-  // formats dictionary
-  auto fmap = types::FormatMap{pix_formats.size()};
+  auto fmap = types::FormatMap{};
+  fmap.reserve(pix_formats.size());
 
   for (const auto& pix_format : conversion::convert_pix_formats(pix_formats)) {
     const std::vector<v4l2_frmsizeenum> frame_sizes = tools::list_frame_sizes(fd, pix_format);
@@ -88,39 +114,22 @@ int main(int argc, char const* argv[]) {
     }
   }
 
-  // TBD: set format, frame size, frame intervals and check with VIDIOC_G_*
-  // Note: some VIDIOC_G_* calls fail on unsupported features
-  // Note: check V4L2_CAP_TIMEPERFRAME before calling VIDIOC_S_PARM
+  // FIXME: check if format is set correctly
+  const auto format = tools::set_format(fd, formats::PixelFormat::V4L2_YUYV, {320, 240});
 
-  return 0;
-
-  // set format (resolution and pixel format)
-  v4l2_format fmt = {};
-  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  fmt.fmt.pix.width = 640;
-  fmt.fmt.pix.height = 480;
-  fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-  fmt.fmt.pix.field = V4L2_FIELD_ANY;  // Progressive scan: V4L2_FIELD_NONE
-
-  if (lirs::tools::xioctl(fd, VIDIOC_S_FMT, &fmt) == -1) {
-    std::cerr << "ERROR: failed to set format\n";
+  if (!format) {
+    PLOG_ERROR << "Could not set format for device: " << dev_name;
     return EXIT_FAILURE;
   }
 
-  // set frame rate
-  v4l2_streamparm parm = {};
-  parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  parm.parm.capture.timeperframe.numerator = 1;     // 1 second
-  parm.parm.capture.timeperframe.denominator = 30;  // 30 FPS
+  const auto framerate = tools::set_frame_rate(fd, {1, 30});
 
-  if (lirs::tools::xioctl(fd, VIDIOC_S_PARM, &parm) == -1) {
-    std::cout << "WARN: failed to set frame rate\n";
+  if (!framerate) {
+    PLOG_ERROR << "Could not set framerate for device: " << dev_name;
+    return EXIT_FAILURE;
   }
 
-  if (lirs::tools::xioctl(fd, VIDIOC_G_PARM, &parm) != -1) {
-    const auto framerate = parm.parm.capture.timeperframe.denominator;
-    std::cout << "INFO: selected frame rate: " << framerate << '\n';
-  }
+  return 0;
 
   // request buffer (MMAP)
   v4l2_requestbuffers buf_req = {};

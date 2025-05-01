@@ -142,6 +142,14 @@ inline bool check_video_streaming_caps(types::caps_t caps) {
   return true;
 }
 
+inline bool check_timeperframe_caps(types::caps_t caps) {
+  if (caps & V4L2_CAP_TIMEPERFRAME) {
+    return true;
+  }
+
+  return false;
+}
+
 inline std::vector<v4l2_fmtdesc> list_pixel_formats(types::descriptor_t fd) {
   auto pix_formats = std::vector<v4l2_fmtdesc>{};
   pix_formats.reserve(8);
@@ -190,14 +198,14 @@ inline std::vector<v4l2_frmsizeenum> list_frame_sizes(types::descriptor_t fd, fo
 }
 
 inline std::vector<v4l2_frmivalenum> list_frame_rates(
-  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& resolution) {
+  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& res) {
   auto frame_rates = std::vector<v4l2_frmivalenum>{};
   frame_rates.reserve(8);
 
   auto fps = v4l2_frmivalenum{};
 
-  fps.width = resolution.width;
-  fps.height = resolution.height;
+  fps.width = res.width;
+  fps.height = res.height;
   fps.pixel_format = formats::format2fourcc(fmt);
 
   for (fps.index = 0; xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &fps) == 0; fps.index++) {
@@ -211,8 +219,8 @@ inline std::vector<v4l2_frmivalenum> list_frame_rates(
 
   if (frame_rates.empty()) {
     PLOG_WARNING.printf(
-      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(fmt).data(), resolution.width,
-      resolution.height);
+      "No supported frame rates: fd = %d, format = %s @ %d x %d", fd, formats::format2str(fmt).data(), res.width,
+      res.height);
   }
 
   const auto greater_or_eq = [](const v4l2_frmivalenum& left, const v4l2_frmivalenum& right) {
@@ -252,18 +260,33 @@ inline std::optional<v4l2_streamparm> get_stream_params(types::descriptor_t fd) 
 }
 
 inline std::optional<v4l2_format> set_format(
-  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& resolution) {
+  types::descriptor_t fd, formats::PixelFormat fmt, const types::Resolution& res) {
   auto format = v4l2_format{};
 
   format.fmt.pix.pixelformat = formats::format2fourcc(fmt);
   format.fmt.pix.field = V4L2_FIELD_ANY;
-  format.fmt.pix.width = resolution.width;
-  format.fmt.pix.height = resolution.height;
+  format.fmt.pix.width = res.width;
+  format.fmt.pix.height = res.height;
   format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
   if (xioctl(fd, VIDIOC_S_FMT, &format) == details::IOCTL_ERROR_CODE) {
     PLOG_ERROR.printf("VIDIOC_S_FMT failed: fd = %d. %s", fd, strerror(errno));
     return std::nullopt;
+  }
+
+  // verify format
+  if (format.fmt.pix.width != res.width || format.fmt.pix.height != res.height) {
+    PLOG_WARNING.printf(
+      "Resolution adjusted by device: requested %dx%d, got %dx%d", res.width, res.height, format.fmt.pix.width,
+      format.fmt.pix.height);
+  }
+
+  const auto current_format = formats::fourcc2format(format.fmt.pix.pixelformat);
+
+  if (format.fmt.pix.pixelformat != formats::format2fourcc(fmt)) {
+    PLOG_WARNING.printf(
+      "Pixel format adjusted by device: requested %s, got %s", formats::format2str(fmt).data(),
+      formats::format2str(*current_format).data());
   }
 
   return format;
@@ -281,6 +304,13 @@ inline std::optional<v4l2_streamparm> set_frame_rate(types::descriptor_t fd, con
     return std::nullopt;
   }
 
+  const auto current_fps = parm.parm.capture.timeperframe;
+
+  if (current_fps.numerator != fps.num || current_fps.denominator != fps.den) {
+    PLOG_WARNING.printf(
+      "Framerate adjusted by device: requested %d/%d, got %d/%d", fps.den, fps.num, current_fps.denominator,
+      current_fps.numerator);
+  }
   return parm;
 }
 
